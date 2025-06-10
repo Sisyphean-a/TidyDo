@@ -7,7 +7,5 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [
-    (await import('@tailwindcss/line-clamp')).default,
-  ],
+  plugins: [],
 } 
