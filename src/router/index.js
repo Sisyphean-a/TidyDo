@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import Home from '@/views/jsonToJs/index.vue'
+import Home from '@/views/tidyDo/index.vue'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -8,12 +8,6 @@ const router = createRouter({
       path: '/',
       name: 'Home',
       component: Home,
-      meta: {
-        title: 'JSON转JS',
-        description: '使用JS处理JSON',
-        icon: 'mdi-home',
-        category: '处理工具'
-      }
     },
   ],
 })
