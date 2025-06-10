@@ -1,13 +1,4 @@
 <template>
-  <v-snackbar
-    v-model="snackbar.show"
-    :timeout="2000"
-    location="top"
-    color="success"
-  >
-    复制成功：{{ snackbar.text }}
-  </v-snackbar>
-
   <v-row
     class="todo-item-row align-center"
     no-gutters
@@ -15,12 +6,12 @@
     <!-- 第一列：编号（可点击复制） -->
     <v-col
       cols="2"
-      class="todo-column"
+      class="todo-column text-center"
     >
       <v-btn
         variant="text"
         density="compact"
-        class="text-body-2 justify-start"
+        class="text-body-2 justify-center"
         @click="copyToClipboard(getDisplayNumber(), '编号')"
       >
         <v-icon
@@ -32,47 +23,101 @@
       </v-btn>
     </v-col>
 
-    <!-- 第二列：标题（可点击复制） -->
+    <!-- 第二列：标题（可点击复制，悬停显示描述） -->
     <v-col
-      cols="6"
-      class="todo-column"
+      cols="4"
+      class="todo-column text-center"
+    >
+      <v-tooltip
+        :text="item.description || '暂无描述'"
+        location="bottom"
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            variant="text"
+            density="compact"
+            class="text-body-1 justify-center text-truncate"
+            style="max-width: 100%"
+            @click="copyToClipboard(item.title, '标题')"
+          >
+            <span class="text-truncate">{{ item.title }}</span>
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </v-col>
+
+    <!-- 第三列：截止日期（新增列，可点击复制） -->
+    <v-col
+      cols="2"
+      class="todo-column text-center"
     >
       <v-btn
         variant="text"
         density="compact"
-        class="text-body-1 justify-start text-truncate"
-        style="max-width: 100%"
-        @click="copyToClipboard(item.title, '标题')"
+        class="text-body-2 justify-center"
+        :class="{ 'text-error': isOverdue }"
+        @click="copyToClipboard(formatDate(item.endDate), '截止日期')"
       >
         <v-icon
           size="small"
-          class="me-2"
-          :color="getPriorityColor(item.priority)"
+          class="me-1"
+          :color="isOverdue ? 'error' : 'default'"
         >
-          {{ getPriorityIcon(item.priority) }}
+          {{ isOverdue ? 'mdi-alert-circle' : 'mdi-calendar' }}
         </v-icon>
-        <span class="text-truncate">{{ item.title }}</span>
+        {{ formatDate(item.endDate) || '未设置' }}
       </v-btn>
     </v-col>
 
-    <!-- 第三列：状态（扩展列） -->
+    <!-- 第四列：状态（可点击修改） -->
     <v-col
       cols="2"
-      class="todo-column"
+      class="todo-column text-center"
     >
-      <v-chip
-        size="small"
-        :color="getStatusColor(item.status)"
-        variant="flat"
-      >
-        {{ getStatusText(item.status) }}
-      </v-chip>
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-chip
+            v-bind="menuProps"
+            size="small"
+            :color="getStatusColor(item.status)"
+            variant="flat"
+            clickable
+          >
+            {{ getStatusText(item.status) }}
+            <v-icon
+              size="small"
+              class="ms-1"
+              :color="getStatusColor(item.status) === 'warning' ? 'white' : 'inherit'"
+            >
+              mdi-chevron-down
+            </v-icon>
+          </v-chip>
+        </template>
+        <v-list density="compact">
+          <v-list-item
+            v-for="(status, key) in statusConfig"
+            :key="key"
+            :title="status.text"
+            @click="handleStatusChange(key)"
+          >
+            <template #prepend>
+              <v-icon
+                size="small"
+                :color="status.color"
+              >
+                mdi-circle
+              </v-icon>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </v-col>
 
-    <!-- 第四列：操作按钮 -->
+    <!-- 第五列：操作按钮 -->
     <v-col
       cols="2"
-      class="todo-column text-end"
+      class="todo-column text-center"
     >
       <v-btn-group
         variant="text"
@@ -96,7 +141,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, onMounted } from 'vue'
+import { defineProps, defineEmits, ref, computed, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
 
 const props = defineProps({
@@ -120,6 +165,8 @@ const props = defineProps({
 
 const emit = defineEmits([
   'edit',
+  'status-change',
+  'copy',
   'category-select',
   'category-toggle-expanded',
   'create-category',
@@ -129,17 +176,17 @@ const emit = defineEmits([
   'show-about',
 ])
 
-const isDrawerOpen = ref(true)
-const isRailMode = ref(false)
-
 // 配置数据
 const statusConfig = ref({})
 const priorityConfig = ref({})
 
-// 提示消息状态
-const snackbar = ref({
-  show: false,
-  text: '',
+// 计算截止日期是否过期
+const isOverdue = computed(() => {
+  if (!props.item.endDate) return false
+  const endDate = new Date(props.item.endDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return endDate < today && props.item.status !== 'completed'
 })
 
 // 格式化ID显示（取前8位）
@@ -152,14 +199,14 @@ const getDisplayNumber = () => {
   return props.item.customNumber || formatId(props.item.id)
 }
 
-// 获取优先级颜色（基于配置）
-const getPriorityColor = (priority) => {
-  return priorityConfig.value[priority]?.color || 'grey'
-}
-
-// 获取优先级图标（基于配置）
-const getPriorityIcon = (priority) => {
-  return priorityConfig.value[priority]?.icon || 'mdi-minus'
+// 格式化日期
+const formatDate = (date) => {
+  if (!date) return ''
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}/${month}/${day}`
 }
 
 // 获取状态颜色（基于配置）
@@ -172,19 +219,18 @@ const getStatusText = (status) => {
   return statusConfig.value[status]?.text || '未知'
 }
 
-// 复制到剪贴板
+// 获取优先级文本（基于配置）
+const getPriorityText = (priority) => {
+  return priorityConfig.value[priority]?.text || '未知'
+}
+
+// 处理复制事件
 const copyToClipboard = async (text, type) => {
   try {
     await navigator.clipboard.writeText(text)
-    snackbar.value = {
-      show: true,
-      text: `${text}`,
-    }
+    emit('copy', { text, type })
   } catch (err) {
-    snackbar.value = {
-      show: true,
-      text: '复制失败，请重试！',
-    }
+    emit('copy', { text: '复制失败，请重试！', type: 'error' })
   }
 }
 
@@ -194,14 +240,19 @@ const copyFullInfo = () => {
 标题: ${props.item.title}
 描述: ${props.item.description || '无'}
 优先级: ${getPriorityText(props.item.priority)}
-状态: ${getStatusText(props.item.status)}`
+状态: ${getStatusText(props.item.status)}
+截止日期: ${formatDate(props.item.endDate) || '未设置'}`
 
   copyToClipboard(fullInfo, '待办事项')
 }
 
-// 获取优先级文本（基于配置）
-const getPriorityText = (priority) => {
-  return priorityConfig.value[priority]?.text || '未知'
+// 处理状态改变
+const handleStatusChange = async (newStatus) => {
+  if (newStatus !== props.item.status) {
+    emit('status-change', { item: props.item, newStatus })
+    // 状态变更后重新加载配置
+    await loadConfig()
+  }
 }
 
 // 处理编辑
@@ -243,5 +294,14 @@ onMounted(() => {
 .v-btn {
   text-transform: none;
   letter-spacing: normal;
+}
+
+.v-chip {
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 </style>
