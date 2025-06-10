@@ -324,7 +324,15 @@ const formatId = (id) => {
 
 // 格式化日期
 const formatDate = (date) => {
-  return date ? new Date(date).toLocaleString() : ''
+  if (!date) return ''
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  const seconds = String(d.getSeconds()).padStart(2, '0')
+  return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`
 }
 
 // 获取分类名称

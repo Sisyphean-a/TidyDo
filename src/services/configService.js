@@ -11,6 +11,10 @@ export const DEFAULT_CONFIG = {
       text: '待办',
       color: 'warning',
     },
+    inProgress: {
+      text: '进行中',
+      color: 'info',
+    },
     completed: {
       text: '完成',
       color: 'success',

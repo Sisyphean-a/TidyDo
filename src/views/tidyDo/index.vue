@@ -109,22 +109,42 @@
             >
               <v-col
                 cols="2"
-                class="text-body-2 font-weight-bold"
+                class="text-body-2 font-weight-bold text-center"
                 >编号</v-col
               >
               <v-col
-                cols="6"
-                class="text-body-2 font-weight-bold"
+                cols="4"
+                class="text-body-2 font-weight-bold text-center"
                 >标题</v-col
               >
               <v-col
                 cols="2"
-                class="text-body-2 font-weight-bold"
+                class="text-body-2 font-weight-bold text-center"
+              >
+                <v-btn
+                  variant="text"
+                  density="compact"
+                  class="text-body-2 font-weight-bold"
+                  @click="handleSortToggle('endDate')"
+                >
+                  截止日期
+                  <v-icon
+                    v-if="sortBy === 'endDate'"
+                    size="small"
+                    class="ms-1"
+                  >
+                    {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                  </v-icon>
+                </v-btn>
+              </v-col>
+              <v-col
+                cols="2"
+                class="text-body-2 font-weight-bold text-center"
                 >状态</v-col
               >
               <v-col
                 cols="2"
-                class="text-body-2 font-weight-bold text-end"
+                class="text-body-2 font-weight-bold text-center"
                 >操作</v-col
               >
             </v-row>
@@ -132,10 +152,12 @@
             <!-- Todo项列表 -->
             <div class="todo-items">
               <TodoItem
-                v-for="item in currentTodos"
+                v-for="item in sortedTodos"
                 :key="item.id"
                 :item="item"
                 @edit="handleEditTodo"
+                @status-change="handleStatusChange"
+                @copy="handleCopy"
               />
             </div>
           </div>
@@ -157,7 +179,8 @@
     <v-snackbar
       v-model="snackbar.visible"
       :color="snackbar.color"
-      timeout="3000"
+      :timeout="snackbar.timeout"
+      location="top"
     >
       {{ snackbar.message }}
     </v-snackbar>
@@ -183,6 +206,10 @@ const todos = ref([])
 const selectedCategoryId = ref(null)
 const isLoading = ref(false)
 
+// 排序状态
+const sortBy = ref('endDate') // 当前排序字段
+const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
+
 // 弹窗状态
 const editDialog = ref({
   visible: false,
@@ -207,6 +234,31 @@ const selectedCategory = computed(() => {
 const currentTodos = computed(() => {
   if (!selectedCategoryId.value) return []
   return todos.value.filter((todo) => todo.categoryId === selectedCategoryId.value)
+})
+
+// 排序后的待办事项（按截止日期排序）
+const sortedTodos = computed(() => {
+  const sorted = [...currentTodos.value].sort((a, b) => {
+    if (sortBy.value === 'endDate') {
+      // 优先显示有截止日期的事项
+      if (!a.endDate && !b.endDate) return 0
+      if (!a.endDate) return 1
+      if (!b.endDate) return -1
+
+      // 按截止日期排序
+      const dateA = new Date(a.endDate)
+      const dateB = new Date(b.endDate)
+
+      if (sortOrder.value === 'asc') {
+        return dateA - dateB
+      } else {
+        return dateB - dateA
+      }
+    }
+    return 0
+  })
+
+  return sorted
 })
 
 const todoCounts = computed(() => {
@@ -309,6 +361,19 @@ const handleEditTodo = (item) => {
   }
 }
 
+// 处理状态变更
+const handleStatusChange = async ({ item, newStatus }) => {
+  try {
+    const updatedItem = { ...item, status: newStatus }
+    await TodoItemService.save(updatedItem)
+    await loadData()
+    showMessage('状态更新成功', 'success')
+  } catch (error) {
+    showMessage('状态更新失败', 'error')
+    console.error('Status change error:', error)
+  }
+}
+
 const handleSaveTodo = async (todoData) => {
   try {
     let savedItem
@@ -357,12 +422,30 @@ const handleDeleteTodo = async (item) => {
   }
 }
 
+// 处理复制事件
+const handleCopy = ({ text, type }) => {
+  showMessage(type === 'error' ? text : `复制成功：${text}`, type === 'error' ? 'error' : 'success')
+}
+
+// 处理排序切换
+const handleSortToggle = (field) => {
+  if (sortBy.value === field) {
+    // 切换排序顺序
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // 更改排序字段
+    sortBy.value = field
+    sortOrder.value = 'asc'
+  }
+}
+
 // 工具方法
 const showMessage = (message, color = 'success') => {
   snackbar.value = {
     visible: true,
     message,
     color,
+    timeout: 2000,
   }
 }
 
