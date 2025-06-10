@@ -1,6 +1,5 @@
 import './assets/tailwind.css'
 
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
@@ -15,6 +14,8 @@ import '@mdi/font/css/materialdesignicons.css' // 确保导入 CSS
 
 import App from './App.vue'
 import router from './router'
+import { initializeConfig } from './services/configService'
+import { initializeDefaultData } from './services/todoService'
 
 const vuetify = createVuetify({
   components,
@@ -34,4 +35,17 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
+
+// 初始化数据
+async function initializeApp() {
+  try {
+    await initializeConfig()
+    await initializeDefaultData()
+  } catch (error) {
+    console.error('应用初始化失败：', error)
+  }
+}
+
+initializeApp()
+
 app.mount('#app')

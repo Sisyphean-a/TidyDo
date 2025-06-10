@@ -16,9 +16,15 @@
 
     <!-- 主内容区域 -->
     <v-main>
-      <v-container fluid class="pa-0 h-100">
+      <v-container
+        fluid
+        class="pa-0 h-100"
+      >
         <!-- 头部工具栏 -->
-        <v-toolbar flat class="border-b">
+        <v-toolbar
+          flat
+          class="border-b"
+        >
           <v-toolbar-title class="d-flex align-center">
             <v-icon class="me-2">{{ selectedCategory?.icon || 'mdi-folder' }}</v-icon>
             {{ selectedCategory?.name || '请选择分类' }}
@@ -36,7 +42,10 @@
           <v-spacer />
 
           <!-- 工具按钮 -->
-          <v-btn-group variant="outlined" density="comfortable">
+          <v-btn-group
+            variant="outlined"
+            density="comfortable"
+          >
             <v-btn
               prepend-icon="mdi-plus"
               @click="handleCreateTodo"
@@ -54,14 +63,30 @@
 
         <!-- Todo列表内容 -->
         <div class="todo-content">
-          <v-container v-if="!selectedCategory" class="text-center pa-12">
-            <v-icon size="64" color="grey-lighten-2">mdi-arrow-left</v-icon>
+          <v-container
+            v-if="!selectedCategory"
+            class="text-center pa-12"
+          >
+            <v-icon
+              size="64"
+              color="grey-lighten-2"
+              >mdi-arrow-left</v-icon
+            >
             <h3 class="text-h6 mt-4 text-medium-emphasis">请从左侧选择一个分类</h3>
-            <p class="text-body-2 text-medium-emphasis">选择分类后可以查看和管理该分类下的待办事项</p>
+            <p class="text-body-2 text-medium-emphasis">
+              选择分类后可以查看和管理该分类下的待办事项
+            </p>
           </v-container>
 
-          <v-container v-else-if="currentTodos.length === 0" class="text-center pa-12">
-            <v-icon size="64" color="grey-lighten-2">mdi-clipboard-check</v-icon>
+          <v-container
+            v-else-if="currentTodos.length === 0"
+            class="text-center pa-12"
+          >
+            <v-icon
+              size="64"
+              color="grey-lighten-2"
+              >mdi-clipboard-check</v-icon
+            >
             <h3 class="text-h6 mt-4 text-medium-emphasis">还没有待办事项</h3>
             <p class="text-body-2 text-medium-emphasis mb-4">点击"新增待办"创建第一个待办事项</p>
             <v-btn
@@ -73,13 +98,35 @@
             </v-btn>
           </v-container>
 
-          <div v-else class="todo-list">
+          <div
+            v-else
+            class="todo-list"
+          >
             <!-- 列表头部 -->
-            <v-row class="todo-header ma-0 pa-4 bg-grey-lighten-4" no-gutters>
-              <v-col cols="2" class="text-body-2 font-weight-bold">编号</v-col>
-              <v-col cols="6" class="text-body-2 font-weight-bold">标题</v-col>
-              <v-col cols="2" class="text-body-2 font-weight-bold">状态</v-col>
-              <v-col cols="2" class="text-body-2 font-weight-bold text-end">操作</v-col>
+            <v-row
+              class="todo-header ma-0 pa-4 bg-grey-lighten-4"
+              no-gutters
+            >
+              <v-col
+                cols="2"
+                class="text-body-2 font-weight-bold"
+                >编号</v-col
+              >
+              <v-col
+                cols="6"
+                class="text-body-2 font-weight-bold"
+                >标题</v-col
+              >
+              <v-col
+                cols="2"
+                class="text-body-2 font-weight-bold"
+                >状态</v-col
+              >
+              <v-col
+                cols="2"
+                class="text-body-2 font-weight-bold text-end"
+                >操作</v-col
+              >
             </v-row>
 
             <!-- Todo项列表 -->
@@ -127,7 +174,7 @@ import {
   TodoItemService,
   createCategory,
   createTodoItem,
-  initializeDefaultData
+  initializeDefaultData,
 } from '@/services/todoService'
 
 // 响应式数据
@@ -139,7 +186,7 @@ const isLoading = ref(false)
 // 弹窗状态
 const editDialog = ref({
   visible: false,
-  item: null
+  item: null,
 })
 
 const showSettings = ref(false)
@@ -149,23 +196,23 @@ const showAbout = ref(false)
 const snackbar = ref({
   visible: false,
   message: '',
-  color: 'success'
+  color: 'success',
 })
 
 // 计算属性
 const selectedCategory = computed(() => {
-  return categories.value.find(cat => cat.id === selectedCategoryId.value)
+  return categories.value.find((cat) => cat.id === selectedCategoryId.value)
 })
 
 const currentTodos = computed(() => {
   if (!selectedCategoryId.value) return []
-  return todos.value.filter(todo => todo.categoryId === selectedCategoryId.value)
+  return todos.value.filter((todo) => todo.categoryId === selectedCategoryId.value)
 })
 
 const todoCounts = computed(() => {
   const counts = {}
-  categories.value.forEach(category => {
-    counts[category.id] = todos.value.filter(todo => todo.categoryId === category.id).length
+  categories.value.forEach((category) => {
+    counts[category.id] = todos.value.filter((todo) => todo.categoryId === category.id).length
   })
   return counts
 })
@@ -176,7 +223,7 @@ const loadData = async () => {
   try {
     categories.value = await CategoryService.getAll()
     todos.value = await TodoItemService.getAll()
-    
+
     // 如果没有选中分类且有分类，选中第一个
     if (!selectedCategoryId.value && categories.value.length > 0) {
       selectedCategoryId.value = categories.value[0].id
@@ -208,11 +255,7 @@ const handleCreateCategory = async () => {
   if (!name) return
 
   try {
-    const newCategory = createCategory(
-      TodoItemService.generateId(),
-      name,
-      'mdi-folder-outline'
-    )
+    const newCategory = createCategory(TodoItemService.generateId(), name, 'mdi-folder-outline')
     await CategoryService.save(newCategory)
     await loadData()
     showMessage('创建分类成功', 'success')
@@ -255,14 +298,14 @@ const handleDeleteCategory = async (category) => {
 const handleCreateTodo = () => {
   editDialog.value = {
     visible: true,
-    item: null
+    item: null,
   }
 }
 
 const handleEditTodo = (item) => {
   editDialog.value = {
     visible: true,
-    item
+    item,
   }
 }
 
@@ -282,19 +325,19 @@ const handleSaveTodo = async (todoData) => {
         todoData.customNumber,
         todoData.description,
         todoData.priority,
-        todoData.status
+        todoData.status,
       )
       // 合并其他字段
       Object.assign(newItem, {
         tags: Array.isArray(todoData.tags) ? [...todoData.tags] : [],
-        dueDate: todoData.dueDate,
+        endDate: todoData.endDate,
         assignee: todoData.assignee,
-        attachments: Array.isArray(todoData.attachments) ? [...todoData.attachments] : []
+        attachments: Array.isArray(todoData.attachments) ? [...todoData.attachments] : [],
       })
       savedItem = await TodoItemService.save(newItem)
       showMessage('创建待办成功', 'success')
     }
-    
+
     editDialog.value.visible = false
     await loadData()
   } catch (error) {
@@ -319,7 +362,7 @@ const showMessage = (message, color = 'success') => {
   snackbar.value = {
     visible: true,
     message,
-    color
+    color,
   }
 }
 

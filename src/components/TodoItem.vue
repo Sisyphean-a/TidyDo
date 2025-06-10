@@ -1,20 +1,42 @@
 <template>
-  <v-row class="todo-item-row align-center" no-gutters>
+  <v-snackbar
+    v-model="snackbar.show"
+    :timeout="2000"
+    location="top"
+    color="success"
+  >
+    复制成功：{{ snackbar.text }}
+  </v-snackbar>
+
+  <v-row
+    class="todo-item-row align-center"
+    no-gutters
+  >
     <!-- 第一列：编号（可点击复制） -->
-    <v-col cols="2" class="todo-column">
+    <v-col
+      cols="2"
+      class="todo-column"
+    >
       <v-btn
         variant="text"
         density="compact"
         class="text-body-2 justify-start"
         @click="copyToClipboard(getDisplayNumber(), '编号')"
       >
-        <v-icon size="small" class="me-1">mdi-hashtag</v-icon>
+        <v-icon
+          size="small"
+          class="me-1"
+          >mdi-hashtag</v-icon
+        >
         {{ getDisplayNumber() }}
       </v-btn>
     </v-col>
 
     <!-- 第二列：标题（可点击复制） -->
-    <v-col cols="6" class="todo-column">
+    <v-col
+      cols="6"
+      class="todo-column"
+    >
       <v-btn
         variant="text"
         density="compact"
@@ -22,7 +44,11 @@
         style="max-width: 100%"
         @click="copyToClipboard(item.title, '标题')"
       >
-        <v-icon size="small" class="me-2" :color="getPriorityColor(item.priority)">
+        <v-icon
+          size="small"
+          class="me-2"
+          :color="getPriorityColor(item.priority)"
+        >
           {{ getPriorityIcon(item.priority) }}
         </v-icon>
         <span class="text-truncate">{{ item.title }}</span>
@@ -30,7 +56,10 @@
     </v-col>
 
     <!-- 第三列：状态（扩展列） -->
-    <v-col cols="2" class="todo-column">
+    <v-col
+      cols="2"
+      class="todo-column"
+    >
       <v-chip
         size="small"
         :color="getStatusColor(item.status)"
@@ -41,8 +70,14 @@
     </v-col>
 
     <!-- 第四列：操作按钮 -->
-    <v-col cols="2" class="todo-column text-end">
-      <v-btn-group variant="text" density="compact">
+    <v-col
+      cols="2"
+      class="todo-column text-end"
+    >
+      <v-btn-group
+        variant="text"
+        density="compact"
+      >
         <v-btn
           size="small"
           icon="mdi-pencil"
@@ -61,16 +96,51 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, ref, onMounted } from 'vue'
+import { ConfigService } from '@/services/configService'
 
 const props = defineProps({
   item: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
+  categories: {
+    type: Array,
+    default: () => [],
+  },
+  selectedCategoryId: {
+    type: String,
+    default: null,
+  },
+  todoCounts: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
-const emit = defineEmits(['edit'])
+const emit = defineEmits([
+  'edit',
+  'category-select',
+  'category-toggle-expanded',
+  'create-category',
+  'edit-category',
+  'delete-category',
+  'show-settings',
+  'show-about',
+])
+
+const isDrawerOpen = ref(true)
+const isRailMode = ref(false)
+
+// 配置数据
+const statusConfig = ref({})
+const priorityConfig = ref({})
+
+// 提示消息状态
+const snackbar = ref({
+  show: false,
+  text: '',
+})
 
 // 格式化ID显示（取前8位）
 const formatId = (id) => {
@@ -82,84 +152,77 @@ const getDisplayNumber = () => {
   return props.item.customNumber || formatId(props.item.id)
 }
 
-// 获取优先级颜色
+// 获取优先级颜色（基于配置）
 const getPriorityColor = (priority) => {
-  const colors = {
-    high: 'error',
-    medium: 'warning',
-    low: 'success'
-  }
-  return colors[priority] || 'grey'
+  return priorityConfig.value[priority]?.color || 'grey'
 }
 
-// 获取优先级图标
+// 获取优先级图标（基于配置）
 const getPriorityIcon = (priority) => {
-  const icons = {
-    high: 'mdi-chevron-double-up',
-    medium: 'mdi-chevron-up',
-    low: 'mdi-chevron-down'
-  }
-  return icons[priority] || 'mdi-minus'
+  return priorityConfig.value[priority]?.icon || 'mdi-minus'
 }
 
-// 获取状态颜色
+// 获取状态颜色（基于配置）
 const getStatusColor = (status) => {
-  const colors = {
-    pending: 'warning',
-    completed: 'success',
-    cancelled: 'error'
-  }
-  return colors[status] || 'grey'
+  return statusConfig.value[status]?.color || 'grey'
 }
 
-// 获取状态文本
+// 获取状态文本（基于配置）
 const getStatusText = (status) => {
-  const texts = {
-    pending: '待办',
-    completed: '完成',
-    cancelled: '取消'
-  }
-  return texts[status] || '未知'
+  return statusConfig.value[status]?.text || '未知'
 }
 
 // 复制到剪贴板
 const copyToClipboard = async (text, type) => {
   try {
     await navigator.clipboard.writeText(text)
-    // 使用 Vuetify 的 snackbar 或其他提示方式
-    console.log(`${type}已复制: ${text}`)
+    snackbar.value = {
+      show: true,
+      text: `${text}`,
+    }
   } catch (err) {
-    console.error('复制失败:', err)
+    snackbar.value = {
+      show: true,
+      text: '复制失败，请重试！',
+    }
   }
 }
 
 // 复制完整信息
 const copyFullInfo = () => {
   const fullInfo = `编号: ${getDisplayNumber()}
-ID: ${props.item.id}
 标题: ${props.item.title}
 描述: ${props.item.description || '无'}
 优先级: ${getPriorityText(props.item.priority)}
-状态: ${getStatusText(props.item.status)}
-创建时间: ${new Date(props.item.createdAt).toLocaleString()}`
-  
-  copyToClipboard(fullInfo, '完整信息')
+状态: ${getStatusText(props.item.status)}`
+
+  copyToClipboard(fullInfo, '待办事项')
 }
 
-// 获取优先级文本
+// 获取优先级文本（基于配置）
 const getPriorityText = (priority) => {
-  const texts = {
-    high: '高',
-    medium: '中',
-    low: '低'
-  }
-  return texts[priority] || '未知'
+  return priorityConfig.value[priority]?.text || '未知'
 }
 
 // 处理编辑
 const handleEdit = () => {
   emit('edit', props.item)
 }
+
+// 加载配置
+const loadConfig = async () => {
+  try {
+    statusConfig.value = await ConfigService.getStatusConfig()
+    priorityConfig.value = await ConfigService.getPriorityConfig()
+  } catch (error) {
+    console.error('加载配置失败：', error)
+  }
+}
+
+// 组件挂载时加载配置
+onMounted(() => {
+  loadConfig()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -181,4 +244,4 @@ const handleEdit = () => {
   text-transform: none;
   letter-spacing: normal;
 }
-</style> 
+</style>
