@@ -1,11 +1,19 @@
 <template>
-  <v-dialog v-model="isVisible" max-width="600" persistent>
+  <v-dialog
+    v-model="isVisible"
+    max-width="600"
+    persistent
+  >
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="me-2">{{ isCreateMode ? 'mdi-plus' : 'mdi-pencil' }}</v-icon>
         {{ isCreateMode ? '新建待办' : '编辑待办' }}
         <v-spacer />
-        <v-btn icon variant="text" @click="handleClose">
+        <v-btn
+          icon
+          variant="text"
+          @click="handleClose"
+        >
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </v-card-title>
@@ -13,7 +21,10 @@
       <v-divider />
 
       <v-card-text class="pa-6">
-        <v-form ref="formRef" v-model="isFormValid">
+        <v-form
+          ref="formRef"
+          v-model="isFormValid"
+        >
           <v-row>
             <!-- 自定义编号 -->
             <v-col cols="4">
@@ -48,12 +59,13 @@
           />
 
           <v-row>
-            <!-- 优先级 -->
+            <!-- 结束日期 -->
             <v-col cols="6">
-              <v-select
-                v-model="formData.priority"
-                label="优先级"
-                :items="priorityOptions"
+              <v-text-field
+                v-model="formData.endDate"
+                label="结束日期 *"
+                type="date"
+                :rules="endDateRules"
                 variant="outlined"
                 density="comfortable"
               />
@@ -72,7 +84,7 @@
           </v-row>
 
           <!-- 扩展字段区域 -->
-          <v-expansion-panels class="mb-4">
+          <v-expansion-panels class="my-4">
             <v-expansion-panel>
               <v-expansion-panel-title>
                 <v-icon class="me-2">mdi-cog</v-icon>
@@ -80,12 +92,12 @@
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-row>
-                  <!-- 截止日期 -->
+                  <!-- 优先级 -->
                   <v-col cols="6">
-                    <v-text-field
-                      v-model="formData.dueDate"
-                      label="截止日期"
-                      type="date"
+                    <v-select
+                      v-model="formData.priority"
+                      label="优先级"
+                      :items="priorityOptions"
                       variant="outlined"
                       density="comfortable"
                     />
@@ -118,7 +130,11 @@
           </v-expansion-panels>
 
           <!-- 只读信息（编辑模式下显示） -->
-          <v-card v-if="!isCreateMode" variant="tonal" class="mb-4">
+          <v-card
+            v-if="!isCreateMode"
+            variant="tonal"
+            class="mb-4"
+          >
             <v-card-text>
               <v-row dense>
                 <v-col cols="6">
@@ -183,25 +199,26 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineProps, defineEmits, nextTick } from 'vue'
+import { ref, computed, watch, defineProps, defineEmits, nextTick, onMounted } from 'vue'
+import { ConfigService } from '@/services/configService'
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   item: {
     type: Object,
-    default: null
+    default: null,
   },
   categoryId: {
     type: String,
-    default: null
+    default: null,
   },
   categories: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'save', 'delete'])
@@ -210,6 +227,11 @@ const formRef = ref(null)
 const isFormValid = ref(false)
 const isLoading = ref(false)
 
+// 配置数据
+const statusConfig = ref({})
+const priorityConfig = ref({})
+const fieldConfig = ref({})
+
 // 表单数据
 const formData = ref({
   customNumber: '',
@@ -217,37 +239,41 @@ const formData = ref({
   description: '',
   priority: 'medium',
   status: 'pending',
-  dueDate: null,
+  endDate: null,
   assignee: null,
-  tags: []
+  tags: [],
 })
 
 // 计算属性
 const isVisible = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const isCreateMode = computed(() => !props.item)
 
-// 选项数据
-const priorityOptions = [
-  { title: '低优先级', value: 'low' },
-  { title: '中优先级', value: 'medium' },
-  { title: '高优先级', value: 'high' }
-]
+// 动态选项数据（基于配置）
+const priorityOptions = computed(() => {
+  return Object.entries(priorityConfig.value).map(([key, config]) => ({
+    title: config.text,
+    value: key,
+  }))
+})
 
-const statusOptions = [
-  { title: '待办', value: 'pending' },
-  { title: '完成', value: 'completed' },
-  { title: '取消', value: 'cancelled' }
-]
+const statusOptions = computed(() => {
+  return Object.entries(statusConfig.value).map(([key, config]) => ({
+    title: config.text,
+    value: key,
+  }))
+})
 
 // 验证规则
 const titleRules = [
-  v => !!v || '标题不能为空',
-  v => (v && v.length <= 100) || '标题不能超过100个字符'
+  (v) => !!v || '标题不能为空',
+  (v) => (v && v.length <= 100) || '标题不能超过100个字符',
 ]
+
+const endDateRules = [(v) => !!v || '结束日期不能为空']
 
 // 初始化表单数据
 const initFormData = () => {
@@ -259,9 +285,9 @@ const initFormData = () => {
       description: props.item.description || '',
       priority: props.item.priority || 'medium',
       status: props.item.status || 'pending',
-      dueDate: props.item.dueDate || null,
+      endDate: props.item.endDate || props.item.dueDate || null, // 兼容旧数据
       assignee: props.item.assignee || null,
-      tags: [...(props.item.tags || [])]
+      tags: [...(props.item.tags || [])],
     }
   } else {
     // 创建模式
@@ -271,22 +297,25 @@ const initFormData = () => {
       description: '',
       priority: 'medium',
       status: 'pending',
-      dueDate: null,
+      endDate: null,
       assignee: null,
-      tags: []
+      tags: [],
     }
   }
 }
 
 // 监听弹窗显示状态
-watch(() => props.modelValue, (visible) => {
-  if (visible) {
-    initFormData()
-    nextTick(() => {
-      formRef.value?.resetValidation()
-    })
-  }
-})
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (visible) {
+      initFormData()
+      nextTick(() => {
+        formRef.value?.resetValidation()
+      })
+    }
+  },
+)
 
 // 格式化ID
 const formatId = (id) => {
@@ -300,7 +329,7 @@ const formatDate = (date) => {
 
 // 获取分类名称
 const getCategoryName = (categoryId) => {
-  const category = props.categories.find(cat => cat.id === categoryId)
+  const category = props.categories.find((cat) => cat.id === categoryId)
   return category ? category.name : '未知分类'
 }
 
@@ -313,7 +342,7 @@ const handleSave = async () => {
   try {
     const todoData = {
       ...formData.value,
-      categoryId: props.categoryId || props.item?.categoryId
+      categoryId: props.categoryId || props.item?.categoryId,
     }
 
     if (props.item) {
@@ -339,6 +368,22 @@ const handleDelete = () => {
 const handleClose = () => {
   isVisible.value = false
 }
+
+// 加载配置
+const loadConfig = async () => {
+  try {
+    statusConfig.value = await ConfigService.getStatusConfig()
+    priorityConfig.value = await ConfigService.getPriorityConfig()
+    fieldConfig.value = await ConfigService.getFieldConfig()
+  } catch (error) {
+    console.error('加载配置失败：', error)
+  }
+}
+
+// 组件挂载时加载配置
+onMounted(() => {
+  loadConfig()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -349,4 +394,4 @@ const handleClose = () => {
 .v-expansion-panel-text {
   padding-top: 16px;
 }
-</style> 
+</style>

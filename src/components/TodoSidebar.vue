@@ -12,38 +12,21 @@
       <template v-slot:prepend>
         <v-icon>mdi-clipboard-check-multiple</v-icon>
       </template>
-      <v-list-item-title class="text-h6 font-weight-bold">
-        TidyDo
-      </v-list-item-title>
-      <template v-slot:append>
-        <v-btn
-          icon
-          size="small"
-          variant="text"
-          @click="toggleRailMode"
-        >
-          <v-icon>{{ isRailMode ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
-        </v-btn>
-      </template>
+      <v-list-item-title class="text-h6 font-weight-bold"> TidyDo </v-list-item-title>
     </v-list-item>
 
     <v-divider></v-divider>
 
     <!-- 分类列表 -->
-    <v-list density="compact" nav>
-      <!-- 轨道模式下的新建按钮 -->
-      <v-list-item
-        v-if="isRailMode"
-        @click="$emit('create-category')"
-        class="rail-create-btn"
-      >
-        <template v-slot:prepend>
-          <v-icon>mdi-plus</v-icon>
-        </template>
-      </v-list-item>
-      
+    <v-list
+      density="compact"
+      nav
+    >
       <!-- 分类项 -->
-      <div v-for="category in categories" :key="category.id">
+      <div
+        v-for="category in categories"
+        :key="category.id"
+      >
         <v-list-item
           :prepend-icon="category.icon"
           :title="category.name"
@@ -51,7 +34,10 @@
           @click="handleCategoryClick(category)"
           class="category-item"
         >
-          <template v-slot:append v-if="!isRailMode">
+          <template
+            v-slot:append
+            v-if="!isRailMode"
+          >
             <div class="category-actions">
               <!-- 折叠/展开按钮 -->
               <v-btn
@@ -64,7 +50,7 @@
                   {{ category.isExpanded ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                 </v-icon>
               </v-btn>
-              
+
               <!-- 分类菜单 -->
               <v-menu location="bottom end">
                 <template v-slot:activator="{ props }">
@@ -111,25 +97,39 @@
     </v-list>
 
     <!-- 底部工具栏 -->
-    <template v-slot:append v-if="!isRailMode">
+    <template v-slot:append>
       <v-divider></v-divider>
       <v-list density="compact">
-        <!-- 新建分类按钮 -->
+        <!-- 新建分类按钮 - 现在在两种模式下都显示 -->
         <v-list-item
           prepend-icon="mdi-plus"
-          title="新建分类"
+          :title="isRailMode ? '' : '新建分类'"
           @click="$emit('create-category')"
           class="create-category-btn"
         />
-        <v-divider class="my-1" />
+        <v-divider
+          v-if="!isRailMode"
+          class="my-1"
+        />
+        <v-list-item
+          prepend-icon="mdi-chevron-double-left"
+          :title="isRailMode ? '' : '收起侧边栏'"
+          @click="toggleRailMode"
+        >
+          <template v-slot:prepend>
+            <v-icon>{{
+              isRailMode ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'
+            }}</v-icon>
+          </template>
+        </v-list-item>
         <v-list-item
           prepend-icon="mdi-cog"
-          title="设置"
+          :title="isRailMode ? '' : '设置'"
           @click="$emit('show-settings')"
         />
         <v-list-item
           prepend-icon="mdi-information"
-          title="关于"
+          :title="isRailMode ? '' : '关于'"
           @click="$emit('show-about')"
         />
       </v-list>
@@ -143,16 +143,16 @@ import { ref, defineProps, defineEmits } from 'vue'
 const props = defineProps({
   categories: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   selectedCategoryId: {
     type: String,
-    default: null
+    default: null,
   },
   todoCounts: {
     type: Object,
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits([
@@ -162,7 +162,7 @@ const emit = defineEmits([
   'edit-category',
   'delete-category',
   'show-settings',
-  'show-about'
+  'show-about',
 ])
 
 const isDrawerOpen = ref(true)
@@ -206,7 +206,7 @@ const getCategoryTodoCount = (categoryId) => {
   border: 1px dashed #d1d5db;
   border-radius: 8px;
   transition: all 0.2s;
-  
+
   &:hover {
     border-color: #3b82f6;
     background-color: #eff6ff;
@@ -217,11 +217,11 @@ const getCategoryTodoCount = (categoryId) => {
   margin: 4px 8px;
   border-radius: 8px;
   transition: all 0.2s;
-  
+
   &:hover {
     background-color: #eff6ff;
   }
-  
+
   &.v-list-item--active {
     background-color: #dbeafe;
     color: #2563eb;
@@ -251,10 +251,10 @@ const getCategoryTodoCount = (categoryId) => {
   border-radius: 8px;
   border: 1px dashed #d1d5db;
   transition: all 0.2s;
-  
+
   &:hover {
     border-color: #3b82f6;
     background-color: #eff6ff;
   }
 }
-</style> 
+</style>
