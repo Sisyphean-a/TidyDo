@@ -102,25 +102,13 @@
             v-else
             class="todo-list"
           >
-            <!-- 列表头部 -->
-            <v-row
-              class="todo-header ma-0 pa-4 bg-grey-lighten-4"
-              no-gutters
+            <!-- 表头 -->
+            <TableRow
+              :columns="tableColumns"
+              :isHeader="true"
             >
-              <v-col
-                cols="2"
-                class="text-body-2 font-weight-bold text-center"
-                >编号</v-col
-              >
-              <v-col
-                cols="4"
-                class="text-body-2 font-weight-bold text-center"
-                >标题</v-col
-              >
-              <v-col
-                cols="2"
-                class="text-body-2 font-weight-bold text-center"
-              >
+              <!-- 截止日期列自定义表头（包含排序功能） -->
+              <template #column-2>
                 <v-btn
                   variant="text"
                   density="compact"
@@ -136,21 +124,11 @@
                     {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
                   </v-icon>
                 </v-btn>
-              </v-col>
-              <v-col
-                cols="2"
-                class="text-body-2 font-weight-bold text-center"
-                >状态</v-col
-              >
-              <v-col
-                cols="2"
-                class="text-body-2 font-weight-bold text-center"
-                >操作</v-col
-              >
-            </v-row>
+              </template>
+            </TableRow>
 
             <!-- Todo项列表 -->
-            <div class="todo-items">
+            <div class="bg-white">
               <TodoItem
                 v-for="item in sortedTodos"
                 :key="item.id"
@@ -189,9 +167,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import TodoSidebar from '@/components/TodoSidebar.vue'
-import TodoItem from '@/components/TodoItem.vue'
-import TodoEditDialog from '@/components/TodoEditDialog.vue'
+import TodoSidebar from './components/TodoSidebar.vue'
+import TodoItem from './components/TodoItem.vue'
+import TodoEditDialog from './components/TodoEditDialog.vue'
+import TableRow from './components/TableRow.vue'
 import {
   CategoryService,
   TodoItemService,
@@ -209,6 +188,15 @@ const isLoading = ref(false)
 // 排序状态
 const sortBy = ref('endDate') // 当前排序字段
 const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
+
+// 表格列配置
+const tableColumns = ref([
+  { cols: 1, align: 'center', title: '编号' },
+  { cols: 5, align: 'center', title: '标题' },
+  { cols: 2, align: 'center', title: '截止日期' },
+  { cols: 2, align: 'center', title: '状态' },
+  { cols: 2, align: 'center', title: '操作' }
+])
 
 // 弹窗状态
 const editDialog = ref({
@@ -468,17 +456,6 @@ onMounted(async () => {
 
 .todo-list {
   height: 100%;
-}
-
-.todo-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.todo-items {
-  background: white;
 }
 
 .v-toolbar {
