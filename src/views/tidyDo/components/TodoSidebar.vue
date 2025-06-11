@@ -147,7 +147,7 @@
 
 <script setup>
 import { ref, defineProps, defineEmits } from 'vue'
-import ConfigDialog from './ConfigDialog.vue'
+import ConfigDialog from '@/components/ConfigDialog.vue'
 
 const props = defineProps({
   categories: {

@@ -1,13 +1,10 @@
 <template>
-  <v-row
-    class="todo-item-row align-center"
-    no-gutters
+  <TableRow
+    :columns="columns"
+    :isHeader="false"
   >
-    <!-- 第一列：编号（可点击复制） -->
-    <v-col
-      cols="2"
-      class="todo-column text-center"
-    >
+    <!-- 编号列 -->
+    <template #column-0>
       <v-btn
         variant="text"
         density="compact"
@@ -21,13 +18,10 @@
         >
         {{ getDisplayNumber() }}
       </v-btn>
-    </v-col>
+    </template>
 
-    <!-- 第二列：标题（可点击复制，悬停显示描述） -->
-    <v-col
-      cols="4"
-      class="todo-column text-center"
-    >
+    <!-- 标题列 -->
+    <template #column-1>
       <v-tooltip
         :text="item.description || '暂无描述'"
         location="bottom"
@@ -45,13 +39,10 @@
           </v-btn>
         </template>
       </v-tooltip>
-    </v-col>
+    </template>
 
-    <!-- 第三列：截止日期（新增列，可点击复制） -->
-    <v-col
-      cols="2"
-      class="todo-column text-center"
-    >
+    <!-- 截止日期列 -->
+    <template #column-2>
       <v-btn
         variant="text"
         density="compact"
@@ -68,13 +59,10 @@
         </v-icon>
         {{ formatDate(item.endDate) || '未设置' }}
       </v-btn>
-    </v-col>
+    </template>
 
-    <!-- 第四列：状态（可点击修改） -->
-    <v-col
-      cols="2"
-      class="todo-column text-center"
-    >
+    <!-- 状态列 -->
+    <template #column-3>
       <v-menu>
         <template #activator="{ props: menuProps }">
           <v-chip
@@ -112,13 +100,10 @@
           </v-list-item>
         </v-list>
       </v-menu>
-    </v-col>
+    </template>
 
-    <!-- 第五列：操作按钮 -->
-    <v-col
-      cols="2"
-      class="todo-column text-center"
-    >
+    <!-- 操作列 -->
+    <template #column-4>
       <v-btn-group
         variant="text"
         density="compact"
@@ -136,13 +121,14 @@
           color="info"
         />
       </v-btn-group>
-    </v-col>
-  </v-row>
+    </template>
+  </TableRow>
 </template>
 
 <script setup>
 import { defineProps, defineEmits, ref, computed, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
+import TableRow from './TableRow.vue'
 
 const props = defineProps({
   item: {
@@ -174,6 +160,15 @@ const emit = defineEmits([
   'delete-category',
   'show-settings',
   'show-about',
+])
+
+// 列配置
+const columns = ref([
+  { cols: 1, align: 'center', title: '编号' },
+  { cols: 5, align: 'center', title: '标题' },
+  { cols: 2, align: 'center', title: '截止日期' },
+  { cols: 2, align: 'center', title: '状态' },
+  { cols: 2, align: 'center', title: '操作' }
 ])
 
 // 配置数据
@@ -277,20 +272,6 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.todo-item-row {
-  border-bottom: 1px solid #f3f4f6;
-  padding: 4px 8px;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #f9fafb;
-  }
-}
-
-.todo-column {
-  padding: 4px 8px;
-}
-
 .v-btn {
   text-transform: none;
   letter-spacing: normal;
