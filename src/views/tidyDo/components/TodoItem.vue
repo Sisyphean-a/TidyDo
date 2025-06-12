@@ -53,14 +53,14 @@
         :class="{ 'text-error': isOverdue }"
         @click="copyToClipboard(formatDate(item.endDate), '截止日期')"
       >
-        <v-icon
-          size="small"
-          class="me-1"
-          :color="isOverdue ? 'error' : 'default'"
-        >
-          {{ isOverdue ? 'mdi-alert-circle' : 'mdi-calendar' }}
-        </v-icon>
         {{ formatDate(item.endDate) || '未设置' }}
+        <span
+          v-if="!isOverdue && item.endDate"
+          class="ms-1"
+          :class="getRemainingDaysClass"
+        >
+          ({{ getRemainingDays }})
+        </span>
       </v-btn>
     </template>
 
@@ -185,6 +185,34 @@ const isOverdue = computed(() => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return endDate < today && props.item.status !== 'completed'
+})
+
+// 计算剩余天数
+const getRemainingDays = computed(() => {
+  if (!props.item.endDate) return ''
+  const endDate = new Date(props.item.endDate)
+  const today = new Date()
+  // 将时间部分设置为0，只比较日期
+  endDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  const diffTime = endDate - today
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays > 0 ? `${diffDays}天` : '今天'
+})
+
+// 根据剩余天数获取样式类
+const getRemainingDaysClass = computed(() => {
+  if (!props.item.endDate) return ''
+  const endDate = new Date(props.item.endDate)
+  const today = new Date()
+  // 将时间部分设置为0，只比较日期
+  endDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  const diffTime = endDate - today
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  if (diffDays <= 0) return 'text-error'
+  if (diffDays <= 3) return 'text-warning'
+  return 'text-success'
 })
 
 // 格式化ID显示（取前8位）
