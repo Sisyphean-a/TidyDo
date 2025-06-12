@@ -73,19 +73,6 @@
               </div>
             </template>
           </v-list-item>
-
-          <!-- Todo计数显示（折叠状态下） -->
-          <v-list-item
-            v-if="category.isExpanded && !isRailMode"
-            class="todo-count-item"
-          >
-            <template v-slot:prepend>
-              <div class="ms-6"></div>
-            </template>
-            <v-list-item-subtitle class="text-caption">
-              {{ getCategoryTodoCount(category.id) }} 个待办事项
-            </v-list-item-subtitle>
-          </v-list-item>
         </div>
       </v-list>
 
