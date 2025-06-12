@@ -35,7 +35,10 @@
             style="max-width: 100%"
             @click="copyToClipboard(item.title, '标题')"
           >
-            <span class="text-truncate">{{ item.title }}</span>
+            <v-icon :color="getStatusColor(item.status)">
+              {{ getPriorityIcon(item.priority) }}
+            </v-icon>
+            <span class="text-truncate"> {{ item.title }}</span>
           </v-btn>
         </template>
       </v-tooltip>
@@ -168,7 +171,7 @@ const columns = ref([
   { cols: 5, align: 'center', title: '标题' },
   { cols: 2, align: 'center', title: '截止日期' },
   { cols: 2, align: 'center', title: '状态' },
-  { cols: 2, align: 'center', title: '操作' }
+  { cols: 2, align: 'center', title: '操作' },
 ])
 
 // 配置数据
@@ -214,9 +217,9 @@ const getStatusText = (status) => {
   return statusConfig.value[status]?.text || '未知'
 }
 
-// 获取优先级文本（基于配置）
-const getPriorityText = (priority) => {
-  return priorityConfig.value[priority]?.text || '未知'
+// 获取优先级icon（基于配置）
+const getPriorityIcon = (priority) => {
+  return priorityConfig.value[priority]?.icon || 'mdi-help-circle'
 }
 
 // 处理复制事件
@@ -231,12 +234,7 @@ const copyToClipboard = async (text, type) => {
 
 // 复制完整信息
 const copyFullInfo = () => {
-  const fullInfo = `编号: ${getDisplayNumber()}
-标题: ${props.item.title}
-描述: ${props.item.description || '无'}
-优先级: ${getPriorityText(props.item.priority)}
-状态: ${getStatusText(props.item.status)}
-截止日期: ${formatDate(props.item.endDate) || '未设置'}`
+  const fullInfo = `${getDisplayNumber()} ${props.item.title}`
 
   copyToClipboard(fullInfo, '待办事项')
 }
@@ -267,6 +265,7 @@ const loadConfig = async () => {
 
 // 组件挂载时加载配置
 onMounted(() => {
+  console.log('item', props.item)
   loadConfig()
 })
 </script>
