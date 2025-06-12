@@ -40,17 +40,9 @@
               v-if="!isRailMode"
             >
               <div class="category-actions">
-                <!-- 折叠/展开按钮 -->
-                <v-btn
-                  icon
-                  size="x-small"
-                  variant="text"
-                  @click.stop="toggleCategoryExpanded(category)"
-                >
-                  <v-icon size="small">
-                    {{ category.isExpanded ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
-                  </v-icon>
-                </v-btn>
+                <span class="text-caption">
+                  {{ getCategoryTodoCount(category.id) }}
+                </span>
 
                 <!-- 分类菜单 -->
                 <v-menu location="bottom end">
@@ -69,12 +61,12 @@
                     <v-list-item
                       prepend-icon="mdi-pencil"
                       title="编辑"
-                      @click="$emit('edit-category', category)"
+                      @click="handleEditCategory(category)"
                     />
                     <v-list-item
                       prepend-icon="mdi-delete"
                       title="删除"
-                      @click="$emit('delete-category', category)"
+                      @click="handleDeleteCategory(category)"
                     />
                   </v-list>
                 </v-menu>
@@ -105,7 +97,7 @@
           <v-list-item
             prepend-icon="mdi-plus"
             :title="isRailMode ? '' : '新建分类'"
-            @click="$emit('create-category')"
+            @click="handleCreateCategory"
             class="create-category-btn"
           />
           <v-divider
@@ -142,18 +134,25 @@
       v-model="isConfigDialogVisible"
       @config-updated="handleConfigUpdated"
     />
+
+    <!-- 全局提示 -->
+    <v-snackbar
+      v-model="snackbar.visible"
+      :color="snackbar.color"
+      :timeout="snackbar.timeout"
+      location="top"
+    >
+      {{ snackbar.message }}
+    </v-snackbar>
   </div>
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ConfigDialog from '@/components/ConfigDialog.vue'
+import { useCategories } from '../composables/useCategories'
 
 const props = defineProps({
-  categories: {
-    type: Array,
-    default: () => [],
-  },
   selectedCategoryId: {
     type: String,
     default: null,
@@ -166,17 +165,85 @@ const props = defineProps({
 
 const emit = defineEmits([
   'category-select',
-  'category-toggle-expanded',
-  'create-category',
-  'edit-category',
-  'delete-category',
-  'show-settings',
+  'category-updated', // 当分类数据发生变化时触发
   'show-about',
 ])
 
+// 使用分类管理组合式API
+const {
+  categories,
+  isLoading: categoryLoading,
+  loadCategories,
+  createNewCategory,
+  updateCategory,
+  deleteCategory,
+} = useCategories()
+
+// 内部状态
 const isDrawerOpen = ref(true)
 const isRailMode = ref(false)
 const isConfigDialogVisible = ref(false)
+
+// 提示消息
+const snackbar = ref({
+  visible: false,
+  message: '',
+  color: 'success',
+  timeout: 2000,
+})
+
+// 创建分类
+const handleCreateCategory = async () => {
+  const name = prompt('请输入分类名称:')
+  if (!name) return
+
+  try {
+    await createNewCategory(name)
+    // 通知父组件分类数据已更新
+    emit('category-updated', categories.value)
+    showMessage('创建分类成功', 'success')
+  } catch (error) {
+    showMessage('创建分类失败', 'error')
+  }
+}
+
+// 编辑分类
+const handleEditCategory = async (category) => {
+  const name = prompt('请输入新的分类名称:', category.name)
+  if (!name || name === category.name) return
+
+  try {
+    await updateCategory(category, { name })
+    // 通知父组件分类数据已更新
+    emit('category-updated', categories.value)
+    showMessage('更新分类成功', 'success')
+  } catch (error) {
+    showMessage('更新分类失败', 'error')
+  }
+}
+
+// 删除分类
+const handleDeleteCategory = async (category) => {
+  if (!confirm(`确定要删除分类"${category.name}"吗？这将同时删除该分类下的所有待办事项。`)) {
+    return
+  }
+
+  try {
+    await deleteCategory(category.id)
+    
+    // 如果删除的是当前选中的分类，需要通知父组件
+    if (props.selectedCategoryId === category.id) {
+      const newCategory = categories.value.length > 0 ? categories.value[0] : null
+      emit('category-select', newCategory)
+    }
+    
+    // 通知父组件分类数据已更新
+    emit('category-updated', categories.value)
+    showMessage('删除分类成功', 'success')
+  } catch (error) {
+    showMessage('删除分类失败', 'error')
+  }
+}
 
 // 切换轨道模式
 const toggleRailMode = () => {
@@ -192,13 +259,7 @@ const handleCategoryClick = (category) => {
 
 // 处理配置更新
 const handleConfigUpdated = () => {
-  // 可以在这里添加配置更新后的处理逻辑
   console.log('配置已更新')
-}
-
-// 切换分类展开状态
-const toggleCategoryExpanded = (category) => {
-  emit('category-toggle-expanded', category.id, !category.isExpanded)
 }
 
 // 获取分类下的todo数量
@@ -206,10 +267,37 @@ const getCategoryTodoCount = (categoryId) => {
   return props.todoCounts[categoryId] || 0
 }
 
-// 修改设置按钮的点击处理
+// 设置按钮点击处理
 const handleSettingsClick = () => {
   isConfigDialogVisible.value = true
 }
+
+// 显示消息
+const showMessage = (message, color = 'success') => {
+  snackbar.value = {
+    visible: true,
+    message,
+    color,
+    timeout: 2000,
+  }
+}
+
+// 暴露方法给父组件使用
+defineExpose({
+  loadCategories,
+  categories: computed(() => categories.value),
+})
+
+// 组件挂载时加载数据
+onMounted(async () => {
+  try {
+    await loadCategories()
+    // 通知父组件分类数据已更新
+    emit('category-updated', categories.value)
+  } catch (error) {
+    showMessage('初始化分类数据失败', 'error')
+  }
+})
 </script>
 
 <style lang="scss" scoped>
