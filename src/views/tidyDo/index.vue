@@ -2,15 +2,11 @@
   <v-app>
     <!-- 侧边栏 -->
     <TodoSidebar
-      :categories="categories"
+      ref="sidebarRef"
       :selected-category-id="selectedCategoryId"
       :todo-counts="todoCounts"
       @category-select="handleCategorySelect"
-      @category-toggle-expanded="handleCategoryToggleExpanded"
-      @create-category="handleCreateCategory"
-      @edit-category="handleEditCategory"
-      @delete-category="handleDeleteCategory"
-      @show-settings="showSettings = true"
+      @category-updated="handleCategoryUpdated"
       @show-about="showAbout = true"
     />
 
@@ -55,8 +51,8 @@
             </v-btn>
             <v-btn
               icon="mdi-refresh"
-              @click="loadData"
-              :loading="isLoading"
+              @click="loadTodos"
+              :loading="todosLoading"
             />
           </v-btn-group>
         </v-toolbar>
@@ -171,19 +167,27 @@ import TodoSidebar from './components/TodoSidebar.vue'
 import TodoItem from './components/TodoItem.vue'
 import TodoEditDialog from './components/TodoEditDialog.vue'
 import TableRow from './components/TableRow.vue'
-import {
-  CategoryService,
-  TodoItemService,
-  createCategory,
-  createTodoItem,
-  initializeDefaultData,
-} from '@/services/todoService'
+import { initializeDefaultData } from '@/services/todoService'
+import { useCategories } from './composables/useCategories'
+import { useTodos } from './composables/useTodos'
+
+// 使用组合式API
+const { categories, getCategoryById } = useCategories()
+const {
+  todos,
+  isLoading: todosLoading,
+  loadTodos: loadAllTodos,
+  getTodosByCategoryId,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+  updateTodoStatus,
+  getTodoCounts,
+} = useTodos()
 
 // 响应式数据
-const categories = ref([])
-const todos = ref([])
 const selectedCategoryId = ref(null)
-const isLoading = ref(false)
+const sidebarRef = ref(null)
 
 // 排序状态
 const sortBy = ref('endDate') // 当前排序字段
@@ -204,7 +208,6 @@ const editDialog = ref({
   item: null,
 })
 
-const showSettings = ref(false)
 const showAbout = ref(false)
 
 // 提示消息
@@ -216,12 +219,12 @@ const snackbar = ref({
 
 // 计算属性
 const selectedCategory = computed(() => {
-  return categories.value.find((cat) => cat.id === selectedCategoryId.value)
+  return getCategoryById(selectedCategoryId.value)
 })
 
 const currentTodos = computed(() => {
   if (!selectedCategoryId.value) return []
-  return todos.value.filter((todo) => todo.categoryId === selectedCategoryId.value)
+  return getTodosByCategoryId(selectedCategoryId.value)
 })
 
 // 排序后的待办事项（按截止日期排序）
@@ -249,88 +252,33 @@ const sortedTodos = computed(() => {
   return sorted
 })
 
-const todoCounts = computed(() => {
-  const counts = {}
-  categories.value.forEach((category) => {
-    counts[category.id] = todos.value.filter((todo) => todo.categoryId === category.id).length
-  })
-  return counts
-})
+const todoCounts = getTodoCounts
 
 // 数据加载
-const loadData = async () => {
-  isLoading.value = true
+const loadTodos = async () => {
   try {
-    categories.value = await CategoryService.getAll()
-    todos.value = await TodoItemService.getAll()
-
-    // 如果没有选中分类且有分类，选中第一个
-    if (!selectedCategoryId.value && categories.value.length > 0) {
-      selectedCategoryId.value = categories.value[0].id
-    }
+    await loadAllTodos()
   } catch (error) {
-    showMessage('加载数据失败', 'error')
-    console.error('Load data error:', error)
-  } finally {
-    isLoading.value = false
+    showMessage('加载待办事项失败', 'error')
   }
 }
 
 // 分类相关操作
 const handleCategorySelect = (category) => {
-  selectedCategoryId.value = category.id
+  selectedCategoryId.value = category ? category.id : null
 }
 
-const handleCategoryToggleExpanded = async (categoryId, isExpanded) => {
-  try {
-    await CategoryService.updateExpanded(categoryId, isExpanded)
-    await loadData()
-  } catch (error) {
-    showMessage('更新分类状态失败', 'error')
+const handleCategoryUpdated = (updatedCategories) => {
+  categories.value = updatedCategories
+  
+  // 如果没有选中分类且有分类，选中第一个
+  if (!selectedCategoryId.value && categories.value.length > 0) {
+    selectedCategoryId.value = categories.value[0].id
   }
-}
-
-const handleCreateCategory = async () => {
-  const name = prompt('请输入分类名称:')
-  if (!name) return
-
-  try {
-    const newCategory = createCategory(TodoItemService.generateId(), name, 'mdi-folder-outline')
-    await CategoryService.save(newCategory)
-    await loadData()
-    showMessage('创建分类成功', 'success')
-  } catch (error) {
-    showMessage('创建分类失败', 'error')
-  }
-}
-
-const handleEditCategory = async (category) => {
-  const name = prompt('请输入新的分类名称:', category.name)
-  if (!name || name === category.name) return
-
-  try {
-    await CategoryService.save({ ...category, name })
-    await loadData()
-    showMessage('更新分类成功', 'success')
-  } catch (error) {
-    showMessage('更新分类失败', 'error')
-  }
-}
-
-const handleDeleteCategory = async (category) => {
-  if (!confirm(`确定要删除分类"${category.name}"吗？这将同时删除该分类下的所有待办事项。`)) {
-    return
-  }
-
-  try {
-    await CategoryService.delete(category.id)
-    if (selectedCategoryId.value === category.id) {
-      selectedCategoryId.value = null
-    }
-    await loadData()
-    showMessage('删除分类成功', 'success')
-  } catch (error) {
-    showMessage('删除分类失败', 'error')
+  
+  // 如果当前选中的分类不存在了，清空选择
+  if (selectedCategoryId.value && !categories.value.find(cat => cat.id === selectedCategoryId.value)) {
+    selectedCategoryId.value = categories.value.length > 0 ? categories.value[0].id : null
   }
 }
 
@@ -352,58 +300,35 @@ const handleEditTodo = (item) => {
 // 处理状态变更
 const handleStatusChange = async ({ item, newStatus }) => {
   try {
-    const updatedItem = { ...item, status: newStatus }
-    await TodoItemService.save(updatedItem)
-    await loadData()
+    await updateTodoStatus(item, newStatus)
     showMessage('状态更新成功', 'success')
   } catch (error) {
     showMessage('状态更新失败', 'error')
-    console.error('Status change error:', error)
   }
 }
 
 const handleSaveTodo = async (todoData) => {
   try {
-    let savedItem
     if (editDialog.value.item) {
       // 编辑模式
-      savedItem = await TodoItemService.save(todoData)
+      await updateTodo(todoData)
       showMessage('更新待办成功', 'success')
     } else {
       // 创建模式
-      const newItem = createTodoItem(
-        TodoItemService.generateId(),
-        todoData.categoryId,
-        todoData.title,
-        todoData.customNumber,
-        todoData.description,
-        todoData.priority,
-        todoData.status,
-      )
-      // 合并其他字段
-      Object.assign(newItem, {
-        tags: Array.isArray(todoData.tags) ? [...todoData.tags] : [],
-        endDate: todoData.endDate,
-        assignee: todoData.assignee,
-        attachments: Array.isArray(todoData.attachments) ? [...todoData.attachments] : [],
-      })
-      savedItem = await TodoItemService.save(newItem)
+      await createTodo(todoData)
       showMessage('创建待办成功', 'success')
     }
 
     editDialog.value.visible = false
-    await loadData()
   } catch (error) {
     showMessage('保存待办失败', 'error')
-    console.error('Save todo error:', error)
   }
 }
 
 const handleDeleteTodo = async (item) => {
   try {
-    await TodoItemService.delete(item.id)
+    await deleteTodo(item.id)
     editDialog.value.visible = false
-    await loadData()
     showMessage('删除待办成功', 'success')
   } catch (error) {
     showMessage('删除待办失败', 'error')
@@ -440,7 +365,7 @@ const showMessage = (message, color = 'success') => {
 // 组件挂载
 onMounted(async () => {
   await initializeDefaultData()
-  await loadData()
+  await loadTodos()
 })
 </script>
 
