@@ -35,6 +35,7 @@ export const createTodoItem = (
   endDate: null, // 扩展字段：结束日期（必填）
   assignee: null, // 扩展字段：分配人
   attachments: [], // 扩展字段：附件
+  archived: false, // 扩展字段：是否归档
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 })
@@ -137,7 +138,7 @@ export class TodoItemService {
   }
 
   static generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2)
+    return Date.now().toString(36) + Math.random().toString(36).slice(2)
   }
 }
 
