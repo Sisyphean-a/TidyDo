@@ -50,6 +50,12 @@
               新增待办
             </v-btn>
             <v-btn
+              @click="toggleShowArchived"
+              :prepend-icon="showArchived ? 'mdi-eye-off' : 'mdi-eye'"
+            >
+              {{ showArchived ? '隐藏归档' : '显示归档' }}
+            </v-btn>
+            <v-btn
               icon="mdi-refresh"
               @click="loadTodos"
               :loading="todosLoading"
@@ -132,6 +138,7 @@
                 @edit="handleEditTodo"
                 @status-change="handleStatusChange"
                 @copy="handleCopy"
+                @archive="handleArchive"
               />
             </div>
           </div>
@@ -182,7 +189,10 @@ const {
   updateTodo,
   deleteTodo,
   updateTodoStatus,
+  toggleTodoArchived,
   getTodoCounts,
+  showArchived,
+  toggleShowArchived,
 } = useTodos()
 
 // 响应式数据
@@ -349,6 +359,16 @@ const handleSortToggle = (field) => {
     // 更改排序字段
     sortBy.value = field
     sortOrder.value = 'asc'
+  }
+}
+
+// 处理归档事件
+const handleArchive = async (item) => {
+  try {
+    await toggleTodoArchived(item)
+    showMessage(item.archived ? '取消归档成功' : '归档成功', 'success')
+  } catch (error) {
+    showMessage('归档操作失败', 'error')
   }
 }
 

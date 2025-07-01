@@ -2,6 +2,7 @@
   <TableRow
     :columns="columns"
     :isHeader="false"
+    :rowClass="item.archived ? 'archived' : ''"
   >
     <!-- 编号列 -->
     <template #column-0>
@@ -123,6 +124,12 @@
           @click="copyFullInfo"
           color="info"
         />
+        <v-btn
+          size="small"
+          :icon="item.archived ? 'mdi-archive-off' : 'mdi-archive'"
+          @click="handleArchive"
+          :color="item.archived ? 'warning' : 'grey'"
+        />
       </v-btn-group>
     </template>
   </TableRow>
@@ -156,6 +163,7 @@ const emit = defineEmits([
   'edit',
   'status-change',
   'copy',
+  'archive',
   'category-select',
   'category-toggle-expanded',
   'create-category',
@@ -281,6 +289,11 @@ const handleEdit = () => {
   emit('edit', props.item)
 }
 
+// 处理归档
+const handleArchive = () => {
+  emit('archive', props.item)
+}
+
 // 加载配置
 const loadConfig = async () => {
   try {
@@ -310,6 +323,14 @@ onMounted(() => {
 
   &:hover {
     opacity: 0.8;
+  }
+}
+
+:deep(.archived) {
+  background-color: #fff9c4 !important;
+
+  &:hover {
+    background-color: #fff59d !important;
   }
 }
 </style>

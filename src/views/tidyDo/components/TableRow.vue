@@ -4,7 +4,8 @@
       'table-row align-center',
       isHeader ? 'table-header' : 'table-data-row',
       isHeader ? 'ma-0 pa-4 bg-grey-lighten-4' : '',
-      !isHeader ? 'table-item-row' : ''
+      !isHeader ? 'table-item-row' : '',
+      rowClass
     ]"
     no-gutters
   >
