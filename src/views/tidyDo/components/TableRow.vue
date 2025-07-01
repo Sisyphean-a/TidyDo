@@ -5,7 +5,7 @@
       isHeader ? 'table-header' : 'table-data-row',
       isHeader ? 'ma-0 pa-4 bg-grey-lighten-4' : '',
       !isHeader ? 'table-item-row' : '',
-      rowClass
+      isArchived ? 'archived' : ''
     ]"
     no-gutters
   >
@@ -52,7 +52,7 @@ const props = defineProps({
     default: false
   },
   // 行的自定义CSS类
-  rowClass: {
+  isArchived: {
     type: String,
     default: ''
   }
@@ -99,5 +99,12 @@ const getAlignmentClass = (align) => {
 
 .table-item-row {
   background: white;
+}
+
+.archived {
+  background-color: #fffad1;
+  &:hover {
+    background-color: #fff7b1;
+  }
 }
 </style> 

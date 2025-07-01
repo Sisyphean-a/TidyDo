@@ -134,7 +134,7 @@
               <TodoItem
                 v-for="item in sortedTodos"
                 :key="item.id"
-                :item="item"
+                :itemData="item"
                 @edit="handleEditTodo"
                 @status-change="handleStatusChange"
                 @copy="handleCopy"

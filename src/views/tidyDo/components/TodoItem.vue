@@ -2,7 +2,7 @@
   <TableRow
     :columns="columns"
     :isHeader="false"
-    :rowClass="item.archived ? 'archived' : ''"
+    :isArchived="itemData.archived"
   >
     <!-- 编号列 -->
     <template #column-0>
@@ -24,7 +24,7 @@
     <!-- 标题列 -->
     <template #column-1>
       <v-tooltip
-        :text="item.description || '暂无描述'"
+        :text="itemData.description || '暂无描述'"
         location="bottom"
       >
         <template #activator="{ props: tooltipProps }">
@@ -34,12 +34,12 @@
             density="compact"
             class="text-body-1 justify-center text-truncate"
             style="max-width: 100%"
-            @click="copyToClipboard(item.title, '标题')"
+            @click="copyToClipboard(itemData.title, '标题')"
           >
-            <v-icon :color="getStatusColor(item.status)">
-              {{ getPriorityIcon(item.priority) }}
+            <v-icon :color="getStatusColor(itemData.status)">
+              {{ getPriorityIcon(itemData.priority) }}
             </v-icon>
-            <span class="text-truncate"> {{ item.title }}</span>
+            <span class="text-truncate"> {{ itemData.title }}</span>
           </v-btn>
         </template>
       </v-tooltip>
@@ -52,11 +52,11 @@
         density="compact"
         class="text-body-2 justify-center"
         :class="{ 'text-error': isOverdue }"
-        @click="copyToClipboard(formatDate(item.endDate), '截止日期')"
+        @click="copyToClipboard(formatDate(itemData.endDate), '截止日期')"
       >
-        {{ formatDate(item.endDate) || '未设置' }}
+        {{ formatDate(itemData.endDate) || '未设置' }}
         <span
-          v-if="!isOverdue && item.endDate"
+          v-if="!isOverdue && itemData.endDate"
           class="ms-1"
           :class="getRemainingDaysClass"
         >
@@ -72,15 +72,15 @@
           <v-chip
             v-bind="menuProps"
             size="small"
-            :color="getStatusColor(item.status)"
+            :color="getStatusColor(itemData.status)"
             variant="flat"
             clickable
           >
-            {{ getStatusText(item.status) }}
+            {{ getStatusText(itemData.status) }}
             <v-icon
               size="small"
               class="ms-1"
-              :color="getStatusColor(item.status) === 'warning' ? 'white' : 'inherit'"
+              :color="getStatusColor(itemData.status) === 'warning' ? 'white' : 'inherit'"
             >
               mdi-chevron-down
             </v-icon>
@@ -126,9 +126,9 @@
         />
         <v-btn
           size="small"
-          :icon="item.archived ? 'mdi-archive-off' : 'mdi-archive'"
+          :icon="itemData.archived ? 'mdi-archive-off' : 'mdi-archive'"
           @click="handleArchive"
-          :color="item.archived ? 'warning' : 'grey'"
+          :color="itemData.archived ? 'warning' : 'grey'"
         />
       </v-btn-group>
     </template>
@@ -141,7 +141,7 @@ import { ConfigService } from '@/services/configService'
 import TableRow from './TableRow.vue'
 
 const props = defineProps({
-  item: {
+  itemData: {
     type: Object,
     required: true,
   },
@@ -188,30 +188,31 @@ const priorityConfig = ref({})
 
 // 计算截止日期是否过期
 const isOverdue = computed(() => {
-  if (!props.item.endDate) return false
-  const endDate = new Date(props.item.endDate)
+  if (!props.itemData.endDate) return false
+  const endDate = new Date(props.itemData.endDate)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  return endDate < today && props.item.status !== 'completed'
+  return endDate < today && props.itemData.status !== 'completed'
 })
 
 // 计算剩余天数
 const getRemainingDays = computed(() => {
-  if (!props.item.endDate) return ''
-  const endDate = new Date(props.item.endDate)
+  if (!props.itemData.endDate) return ''
+  const endDate = new Date(props.itemData.endDate)
   const today = new Date()
   // 将时间部分设置为0，只比较日期
   endDate.setHours(0, 0, 0, 0)
   today.setHours(0, 0, 0, 0)
   const diffTime = endDate - today
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return '已过期'
   return diffDays > 0 ? `${diffDays}天` : '今天'
 })
 
 // 根据剩余天数获取样式类
 const getRemainingDaysClass = computed(() => {
-  if (!props.item.endDate) return ''
-  const endDate = new Date(props.item.endDate)
+  if (!props.itemData.endDate) return ''
+  const endDate = new Date(props.itemData.endDate)
   const today = new Date()
   // 将时间部分设置为0，只比较日期
   endDate.setHours(0, 0, 0, 0)
@@ -230,7 +231,7 @@ const formatId = (id) => {
 
 // 获取显示编号（优先使用自定义编号）
 const getDisplayNumber = () => {
-  return props.item.customNumber || formatId(props.item.id)
+  return props.itemData.customNumber || formatId(props.itemData.id)
 }
 
 // 格式化日期
@@ -270,15 +271,15 @@ const copyToClipboard = async (text, type) => {
 
 // 复制完整信息
 const copyFullInfo = () => {
-  const fullInfo = `${getDisplayNumber()} ${props.item.title}`
+  const fullInfo = `${getDisplayNumber()} ${props.itemData.title}`
 
   copyToClipboard(fullInfo, '待办事项')
 }
 
 // 处理状态改变
 const handleStatusChange = async (newStatus) => {
-  if (newStatus !== props.item.status) {
-    emit('status-change', { item: props.item, newStatus })
+  if (newStatus !== props.itemData.status) {
+    emit('status-change', { item: props.itemData, newStatus })
     // 状态变更后重新加载配置
     await loadConfig()
   }
@@ -286,12 +287,12 @@ const handleStatusChange = async (newStatus) => {
 
 // 处理编辑
 const handleEdit = () => {
-  emit('edit', props.item)
+  emit('edit', props.itemData)
 }
 
 // 处理归档
 const handleArchive = () => {
-  emit('archive', props.item)
+  emit('archive', props.itemData)
 }
 
 // 加载配置
@@ -306,7 +307,7 @@ const loadConfig = async () => {
 
 // 组件挂载时加载配置
 onMounted(() => {
-  console.log('item', props.item)
+  console.log('item', props.itemData)
   loadConfig()
 })
 </script>
@@ -323,14 +324,6 @@ onMounted(() => {
 
   &:hover {
     opacity: 0.8;
-  }
-}
-
-:deep(.archived) {
-  background-color: #fff9c4 !important;
-
-  &:hover {
-    background-color: #fff59d !important;
   }
 }
 </style>
