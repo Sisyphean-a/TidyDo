@@ -220,9 +220,9 @@ const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
 const tableColumns = computed(() => {
   const columns = [
     { cols: 1, align: 'center', title: '编号' },
-    { cols: viewAllMode.value ? 4 : 5, align: 'center', title: '标题' },
+    { cols: 5, align: 'center', title: '标题' },
     { cols: 2, align: 'center', title: '截止日期' },
-    { cols: 2, align: 'center', title: '状态' },
+    { cols: viewAllMode.value ? 1 : 2, align: 'center', title: '状态' },
   ]
   
   // 在查看全部模式下，在操作列前添加分类列
