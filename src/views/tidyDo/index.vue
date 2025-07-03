@@ -8,6 +8,7 @@
       @category-select="handleCategorySelect"
       @category-updated="handleCategoryUpdated"
       @show-about="showAbout = true"
+      @view-all="handleViewAll"
     />
 
     <!-- 主内容区域 -->
@@ -22,8 +23,8 @@
           class="border-b"
         >
           <v-toolbar-title class="d-flex align-center">
-            <v-icon class="me-2">{{ selectedCategory?.icon || 'mdi-folder' }}</v-icon>
-            {{ selectedCategory?.name || '请选择分类' }}
+            <v-icon class="me-2">{{ viewAllMode ? 'mdi-view-list' : (selectedCategory?.icon || 'mdi-folder') }}</v-icon>
+            {{ viewAllMode ? '全部待办' : (selectedCategory?.name || '请选择分类') }}
             <v-chip
               v-if="currentTodos.length > 0"
               size="small"
@@ -43,9 +44,17 @@
             density="comfortable"
           >
             <v-btn
+              v-if="viewAllMode"
+              prepend-icon="mdi-close"
+              @click="exitViewAllMode"
+              color="warning"
+            >
+              退出全部视图
+            </v-btn>
+            <v-btn
               prepend-icon="mdi-plus"
               @click="handleCreateTodo"
-              :disabled="!selectedCategory"
+              :disabled="!selectedCategory && !viewAllMode"
             >
               新增待办
             </v-btn>
@@ -66,7 +75,7 @@
         <!-- Todo列表内容 -->
         <div class="todo-content">
           <v-container
-            v-if="!selectedCategory"
+            v-if="!selectedCategory && !viewAllMode"
             class="text-center pa-12"
           >
             <v-icon
@@ -109,8 +118,27 @@
               :columns="tableColumns"
               :isHeader="true"
             >
-              <!-- 截止日期列自定义表头（包含排序功能） -->
-              <template #column-2>
+              <!-- 截止日期列自定义表头（查看全部模式） -->
+              <template #column-3 v-if="viewAllMode">
+                <v-btn
+                  variant="text"
+                  density="compact"
+                  class="text-body-2 font-weight-bold"
+                  @click="handleSortToggle('endDate')"
+                >
+                  截止日期
+                  <v-icon
+                    v-if="sortBy === 'endDate'"
+                    size="small"
+                    class="ms-1"
+                  >
+                    {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+                  </v-icon>
+                </v-btn>
+              </template>
+              
+              <!-- 截止日期列自定义表头（普通模式） -->
+              <template #column-2 v-if="!viewAllMode">
                 <v-btn
                   variant="text"
                   density="compact"
@@ -135,6 +163,9 @@
                 v-for="item in sortedTodos"
                 :key="item.id"
                 :itemData="item"
+                :columns="tableColumns"
+                :categories="categories"
+                :viewAllMode="viewAllMode"
                 @edit="handleEditTodo"
                 @status-change="handleStatusChange"
                 @copy="handleCopy"
@@ -198,19 +229,31 @@ const {
 // 响应式数据
 const selectedCategoryId = ref(null)
 const sidebarRef = ref(null)
+const viewAllMode = ref(false) // 查看全部模式
 
 // 排序状态
 const sortBy = ref('endDate') // 当前排序字段
 const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
 
 // 表格列配置
-const tableColumns = ref([
-  { cols: 1, align: 'center', title: '编号' },
-  { cols: 5, align: 'center', title: '标题' },
-  { cols: 2, align: 'center', title: '截止日期' },
-  { cols: 2, align: 'center', title: '状态' },
-  { cols: 2, align: 'center', title: '操作' }
-])
+const tableColumns = computed(() => {
+  const columns = []
+  
+  // 在查看全部模式下，分类列放在第一列
+  if (viewAllMode.value) {
+    columns.push({ cols: 1, align: 'center', title: '分类' })
+  }
+  
+  columns.push(
+    { cols: 1, align: 'center', title: '编号' },
+    { cols: viewAllMode.value ? 4 : 5, align: 'center', title: '标题' },
+    { cols: 2, align: 'center', title: '截止日期' },
+    { cols: 2, align: 'center', title: '状态' },
+    { cols: 2, align: 'center', title: '操作' }
+  )
+  
+  return columns
+})
 
 // 弹窗状态
 const editDialog = ref({
@@ -233,6 +276,10 @@ const selectedCategory = computed(() => {
 })
 
 const currentTodos = computed(() => {
+  if (viewAllMode.value) {
+    // 查看全部模式：返回所有待办事项（根据 showArchived 状态过滤）
+    return todos.value.filter(todo => showArchived.value || !todo.archived)
+  }
   if (!selectedCategoryId.value) return []
   return getTodosByCategoryId(selectedCategoryId.value)
 })
@@ -276,6 +323,10 @@ const loadTodos = async () => {
 // 分类相关操作
 const handleCategorySelect = (category) => {
   selectedCategoryId.value = category ? category.id : null
+  // 如果在查看全部模式下选择了分类，退出查看全部模式
+  if (viewAllMode.value && category) {
+    viewAllMode.value = false
+  }
 }
 
 const handleCategoryUpdated = (updatedCategories) => {
@@ -294,9 +345,19 @@ const handleCategoryUpdated = (updatedCategories) => {
 
 // Todo相关操作
 const handleCreateTodo = () => {
-  editDialog.value = {
-    visible: true,
-    item: null,
+  if (viewAllMode.value) {
+    // 在查看全部模式下，创建时需要用户选择分类
+    // 默认选择第一个分类
+    const defaultCategoryId = categories.value.length > 0 ? categories.value[0].id : null
+    editDialog.value = {
+      visible: true,
+      item: { categoryId: defaultCategoryId },
+    }
+  } else {
+    editDialog.value = {
+      visible: true,
+      item: null,
+    }
   }
 }
 
@@ -359,6 +420,21 @@ const handleSortToggle = (field) => {
     // 更改排序字段
     sortBy.value = field
     sortOrder.value = 'asc'
+  }
+}
+
+// 处理查看全部
+const handleViewAll = () => {
+  viewAllMode.value = true
+  selectedCategoryId.value = null // 清除分类选择
+}
+
+// 退出查看全部模式
+const exitViewAllMode = () => {
+  viewAllMode.value = false
+  // 选择第一个分类
+  if (categories.value.length > 0) {
+    selectedCategoryId.value = categories.value[0].id
   }
 }
 
