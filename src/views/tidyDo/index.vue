@@ -118,27 +118,8 @@
               :columns="tableColumns"
               :isHeader="true"
             >
-              <!-- 截止日期列自定义表头（查看全部模式） -->
-              <template #column-3 v-if="viewAllMode">
-                <v-btn
-                  variant="text"
-                  density="compact"
-                  class="text-body-2 font-weight-bold"
-                  @click="handleSortToggle('endDate')"
-                >
-                  截止日期
-                  <v-icon
-                    v-if="sortBy === 'endDate'"
-                    size="small"
-                    class="ms-1"
-                  >
-                    {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
-                  </v-icon>
-                </v-btn>
-              </template>
-              
-              <!-- 截止日期列自定义表头（普通模式） -->
-              <template #column-2 v-if="!viewAllMode">
+              <!-- 截止日期列自定义表头（包含排序功能） -->
+              <template #column-2>
                 <v-btn
                   variant="text"
                   density="compact"
@@ -237,20 +218,19 @@ const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
 
 // 表格列配置
 const tableColumns = computed(() => {
-  const columns = []
-  
-  // 在查看全部模式下，分类列放在第一列
-  if (viewAllMode.value) {
-    columns.push({ cols: 1, align: 'center', title: '分类' })
-  }
-  
-  columns.push(
+  const columns = [
     { cols: 1, align: 'center', title: '编号' },
     { cols: viewAllMode.value ? 4 : 5, align: 'center', title: '标题' },
     { cols: 2, align: 'center', title: '截止日期' },
     { cols: 2, align: 'center', title: '状态' },
-    { cols: 2, align: 'center', title: '操作' }
-  )
+  ]
+  
+  // 在查看全部模式下，在操作列前添加分类列
+  if (viewAllMode.value) {
+    columns.push({ cols: 1, align: 'center', title: '分类' })
+  }
+  
+  columns.push({ cols: 2, align: 'center', title: '操作' })
   
   return columns
 })

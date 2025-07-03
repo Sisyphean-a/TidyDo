@@ -4,8 +4,110 @@
     :isHeader="false"
     :isArchived="itemData.archived"
   >
-    <!-- 分类列（仅在查看全部模式下显示，放在第一列） -->
-    <template #column-0 v-if="viewAllMode">
+    <!-- 编号列 -->
+    <template #column-0>
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
+        @click="copyToClipboard(getDisplayNumber(), '编号')"
+      >
+        <v-icon
+          size="small"
+          class="me-1"
+          >mdi-hashtag</v-icon
+        >
+        {{ getDisplayNumber() }}
+      </v-btn>
+    </template>
+
+    <!-- 标题列 -->
+    <template #column-1>
+      <v-tooltip
+        :text="itemData.description || '暂无描述'"
+        location="bottom"
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            variant="text"
+            density="compact"
+            class="text-body-1 justify-center text-truncate"
+            style="max-width: 100%"
+            @click="copyToClipboard(itemData.title, '标题')"
+          >
+            <v-icon :color="getStatusColor(itemData.status)">
+              {{ getPriorityIcon(itemData.priority) }}
+            </v-icon>
+            <span class="text-truncate"> {{ itemData.title }}</span>
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </template>
+
+    <!-- 截止日期列 -->
+    <template #column-2>
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
+        :class="{ 'text-error': isOverdue }"
+        @click="copyToClipboard(formatDate(itemData.endDate), '截止日期')"
+      >
+        {{ formatDate(itemData.endDate) || '未设置' }}
+        <span
+          v-if="!isOverdue && itemData.endDate"
+          class="ms-1"
+          :class="getRemainingDaysClass"
+        >
+          ({{ getRemainingDays }})
+        </span>
+      </v-btn>
+    </template>
+
+    <!-- 状态列 -->
+    <template #column-3>
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-chip
+            v-bind="menuProps"
+            size="small"
+            :color="getStatusColor(itemData.status)"
+            variant="flat"
+            clickable
+          >
+            {{ getStatusText(itemData.status) }}
+            <v-icon
+              size="small"
+              class="ms-1"
+              :color="getStatusColor(itemData.status) === 'warning' ? 'white' : 'inherit'"
+            >
+              mdi-chevron-down
+            </v-icon>
+          </v-chip>
+        </template>
+        <v-list density="compact">
+          <v-list-item
+            v-for="(status, key) in statusConfig"
+            :key="key"
+            :title="status.text"
+            @click="handleStatusChange(key)"
+          >
+            <template #prepend>
+              <v-icon
+                size="small"
+                :color="status.color"
+              >
+                mdi-circle
+              </v-icon>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template>
+
+    <!-- 分类列（仅在查看全部模式下显示） -->
+    <template #column-4 v-if="viewAllMode">
       <v-chip
         size="small"
         variant="tonal"
@@ -17,210 +119,6 @@
         >{{ getCategoryIcon() }}</v-icon>
         {{ getCategoryName() }}
       </v-chip>
-    </template>
-
-    <!-- 编号列（查看全部模式：column-1，普通模式：column-0） -->
-    <template #column-1 v-if="viewAllMode">
-      <v-btn
-        variant="text"
-        density="compact"
-        class="text-body-2 justify-center"
-        @click="copyToClipboard(getDisplayNumber(), '编号')"
-      >
-        <v-icon
-          size="small"
-          class="me-1"
-          >mdi-hashtag</v-icon
-        >
-        {{ getDisplayNumber() }}
-      </v-btn>
-    </template>
-
-    <!-- 编号列（普通模式） -->
-    <template #column-0 v-if="!viewAllMode">
-      <v-btn
-        variant="text"
-        density="compact"
-        class="text-body-2 justify-center"
-        @click="copyToClipboard(getDisplayNumber(), '编号')"
-      >
-        <v-icon
-          size="small"
-          class="me-1"
-          >mdi-hashtag</v-icon
-        >
-        {{ getDisplayNumber() }}
-      </v-btn>
-    </template>
-
-    <!-- 标题列（查看全部模式：column-2，普通模式：column-1） -->
-    <template #column-2 v-if="viewAllMode">
-      <v-tooltip
-        :text="itemData.description || '暂无描述'"
-        location="bottom"
-      >
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-bind="tooltipProps"
-            variant="text"
-            density="compact"
-            class="text-body-1 justify-center text-truncate"
-            style="max-width: 100%"
-            @click="copyToClipboard(itemData.title, '标题')"
-          >
-            <v-icon :color="getStatusColor(itemData.status)">
-              {{ getPriorityIcon(itemData.priority) }}
-            </v-icon>
-            <span class="text-truncate"> {{ itemData.title }}</span>
-          </v-btn>
-        </template>
-      </v-tooltip>
-    </template>
-
-    <!-- 标题列（普通模式） -->
-    <template #column-1 v-if="!viewAllMode">
-      <v-tooltip
-        :text="itemData.description || '暂无描述'"
-        location="bottom"
-      >
-        <template #activator="{ props: tooltipProps }">
-          <v-btn
-            v-bind="tooltipProps"
-            variant="text"
-            density="compact"
-            class="text-body-1 justify-center text-truncate"
-            style="max-width: 100%"
-            @click="copyToClipboard(itemData.title, '标题')"
-          >
-            <v-icon :color="getStatusColor(itemData.status)">
-              {{ getPriorityIcon(itemData.priority) }}
-            </v-icon>
-            <span class="text-truncate"> {{ itemData.title }}</span>
-          </v-btn>
-        </template>
-      </v-tooltip>
-    </template>
-
-    <!-- 截止日期列（查看全部模式） -->
-    <template #column-3 v-if="viewAllMode">
-      <v-btn
-        variant="text"
-        density="compact"
-        class="text-body-2 justify-center"
-        :class="{ 'text-error': isOverdue }"
-        @click="copyToClipboard(formatDate(itemData.endDate), '截止日期')"
-      >
-        {{ formatDate(itemData.endDate) || '未设置' }}
-        <span
-          v-if="!isOverdue && itemData.endDate"
-          class="ms-1"
-          :class="getRemainingDaysClass"
-        >
-          ({{ getRemainingDays }})
-        </span>
-      </v-btn>
-    </template>
-
-    <!-- 截止日期列（普通模式） -->
-    <template #column-2 v-if="!viewAllMode">
-      <v-btn
-        variant="text"
-        density="compact"
-        class="text-body-2 justify-center"
-        :class="{ 'text-error': isOverdue }"
-        @click="copyToClipboard(formatDate(itemData.endDate), '截止日期')"
-      >
-        {{ formatDate(itemData.endDate) || '未设置' }}
-        <span
-          v-if="!isOverdue && itemData.endDate"
-          class="ms-1"
-          :class="getRemainingDaysClass"
-        >
-          ({{ getRemainingDays }})
-        </span>
-      </v-btn>
-    </template>
-
-    <!-- 状态列（查看全部模式） -->
-    <template #column-4 v-if="viewAllMode">
-      <v-menu>
-        <template #activator="{ props: menuProps }">
-          <v-chip
-            v-bind="menuProps"
-            size="small"
-            :color="getStatusColor(itemData.status)"
-            variant="flat"
-            clickable
-          >
-            {{ getStatusText(itemData.status) }}
-            <v-icon
-              size="small"
-              class="ms-1"
-              :color="getStatusColor(itemData.status) === 'warning' ? 'white' : 'inherit'"
-            >
-              mdi-chevron-down
-            </v-icon>
-          </v-chip>
-        </template>
-        <v-list density="compact">
-          <v-list-item
-            v-for="(status, key) in statusConfig"
-            :key="key"
-            :title="status.text"
-            @click="handleStatusChange(key)"
-          >
-            <template #prepend>
-              <v-icon
-                size="small"
-                :color="status.color"
-              >
-                mdi-circle
-              </v-icon>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-    </template>
-
-    <!-- 状态列（普通模式） -->
-    <template #column-3 v-if="!viewAllMode">
-      <v-menu>
-        <template #activator="{ props: menuProps }">
-          <v-chip
-            v-bind="menuProps"
-            size="small"
-            :color="getStatusColor(itemData.status)"
-            variant="flat"
-            clickable
-          >
-            {{ getStatusText(itemData.status) }}
-            <v-icon
-              size="small"
-              class="ms-1"
-              :color="getStatusColor(itemData.status) === 'warning' ? 'white' : 'inherit'"
-            >
-              mdi-chevron-down
-            </v-icon>
-          </v-chip>
-        </template>
-        <v-list density="compact">
-          <v-list-item
-            v-for="(status, key) in statusConfig"
-            :key="key"
-            :title="status.text"
-            @click="handleStatusChange(key)"
-          >
-            <template #prepend>
-              <v-icon
-                size="small"
-                :color="status.color"
-              >
-                mdi-circle
-              </v-icon>
-            </template>
-          </v-list-item>
-        </v-list>
-      </v-menu>
     </template>
 
     <!-- 操作列（查看全部模式） -->
