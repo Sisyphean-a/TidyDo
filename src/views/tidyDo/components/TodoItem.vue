@@ -108,9 +108,10 @@
 
     <!-- 分类列（仅在查看全部模式下显示） -->
     <template #column-4 v-if="viewAllMode">
-      <v-chip
-        size="small"
-        variant="tonal"
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
         @click="copyToClipboard(getCategoryName(), '分类')"
       >
         <v-icon
@@ -118,7 +119,7 @@
           start
         >{{ getCategoryIcon() }}</v-icon>
         {{ getCategoryName() }}
-      </v-chip>
+      </v-btn>
     </template>
 
     <!-- 操作列（查看全部模式） -->
