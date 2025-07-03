@@ -51,10 +51,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  // 行的自定义CSS类
+  // 是否已归档
   isArchived: {
-    type: String,
-    default: ''
+    type: Boolean,
+    default: false
   }
 })
 

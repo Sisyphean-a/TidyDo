@@ -92,6 +92,12 @@
             class="my-1"
           />
           <v-list-item
+            prepend-icon="mdi-view-list"
+            :title="isRailMode ? '' : '查看全部'"
+            @click="$emit('view-all')"
+            class="view-all-btn"
+          />
+          <v-list-item
             prepend-icon="mdi-chevron-double-left"
             :title="isRailMode ? '' : '收起侧边栏'"
             @click="toggleRailMode"
@@ -154,6 +160,7 @@ const emit = defineEmits([
   'category-select',
   'category-updated', // 当分类数据发生变化时触发
   'show-about',
+  'view-all',
 ])
 
 // 使用分类管理组合式API
@@ -350,6 +357,14 @@ onMounted(async () => {
 
   &:hover {
     border-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+}
+
+.view-all-btn {
+  transition: all 0.2s;
+
+  &:hover {
     background-color: #eff6ff;
   }
 }

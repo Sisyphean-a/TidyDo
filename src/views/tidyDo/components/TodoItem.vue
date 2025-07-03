@@ -4,8 +4,23 @@
     :isHeader="false"
     :isArchived="itemData.archived"
   >
-    <!-- 编号列 -->
-    <template #column-0>
+    <!-- 分类列（仅在查看全部模式下显示，放在第一列） -->
+    <template #column-0 v-if="viewAllMode">
+      <v-chip
+        size="small"
+        variant="tonal"
+        @click="copyToClipboard(getCategoryName(), '分类')"
+      >
+        <v-icon
+          size="small"
+          start
+        >{{ getCategoryIcon() }}</v-icon>
+        {{ getCategoryName() }}
+      </v-chip>
+    </template>
+
+    <!-- 编号列（查看全部模式：column-1，普通模式：column-0） -->
+    <template #column-1 v-if="viewAllMode">
       <v-btn
         variant="text"
         density="compact"
@@ -21,8 +36,25 @@
       </v-btn>
     </template>
 
-    <!-- 标题列 -->
-    <template #column-1>
+    <!-- 编号列（普通模式） -->
+    <template #column-0 v-if="!viewAllMode">
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
+        @click="copyToClipboard(getDisplayNumber(), '编号')"
+      >
+        <v-icon
+          size="small"
+          class="me-1"
+          >mdi-hashtag</v-icon
+        >
+        {{ getDisplayNumber() }}
+      </v-btn>
+    </template>
+
+    <!-- 标题列（查看全部模式：column-2，普通模式：column-1） -->
+    <template #column-2 v-if="viewAllMode">
       <v-tooltip
         :text="itemData.description || '暂无描述'"
         location="bottom"
@@ -45,8 +77,32 @@
       </v-tooltip>
     </template>
 
-    <!-- 截止日期列 -->
-    <template #column-2>
+    <!-- 标题列（普通模式） -->
+    <template #column-1 v-if="!viewAllMode">
+      <v-tooltip
+        :text="itemData.description || '暂无描述'"
+        location="bottom"
+      >
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            variant="text"
+            density="compact"
+            class="text-body-1 justify-center text-truncate"
+            style="max-width: 100%"
+            @click="copyToClipboard(itemData.title, '标题')"
+          >
+            <v-icon :color="getStatusColor(itemData.status)">
+              {{ getPriorityIcon(itemData.priority) }}
+            </v-icon>
+            <span class="text-truncate"> {{ itemData.title }}</span>
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </template>
+
+    <!-- 截止日期列（查看全部模式） -->
+    <template #column-3 v-if="viewAllMode">
       <v-btn
         variant="text"
         density="compact"
@@ -65,8 +121,28 @@
       </v-btn>
     </template>
 
-    <!-- 状态列 -->
-    <template #column-3>
+    <!-- 截止日期列（普通模式） -->
+    <template #column-2 v-if="!viewAllMode">
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
+        :class="{ 'text-error': isOverdue }"
+        @click="copyToClipboard(formatDate(itemData.endDate), '截止日期')"
+      >
+        {{ formatDate(itemData.endDate) || '未设置' }}
+        <span
+          v-if="!isOverdue && itemData.endDate"
+          class="ms-1"
+          :class="getRemainingDaysClass"
+        >
+          ({{ getRemainingDays }})
+        </span>
+      </v-btn>
+    </template>
+
+    <!-- 状态列（查看全部模式） -->
+    <template #column-4 v-if="viewAllMode">
       <v-menu>
         <template #activator="{ props: menuProps }">
           <v-chip
@@ -106,8 +182,76 @@
       </v-menu>
     </template>
 
-    <!-- 操作列 -->
-    <template #column-4>
+    <!-- 状态列（普通模式） -->
+    <template #column-3 v-if="!viewAllMode">
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-chip
+            v-bind="menuProps"
+            size="small"
+            :color="getStatusColor(itemData.status)"
+            variant="flat"
+            clickable
+          >
+            {{ getStatusText(itemData.status) }}
+            <v-icon
+              size="small"
+              class="ms-1"
+              :color="getStatusColor(itemData.status) === 'warning' ? 'white' : 'inherit'"
+            >
+              mdi-chevron-down
+            </v-icon>
+          </v-chip>
+        </template>
+        <v-list density="compact">
+          <v-list-item
+            v-for="(status, key) in statusConfig"
+            :key="key"
+            :title="status.text"
+            @click="handleStatusChange(key)"
+          >
+            <template #prepend>
+              <v-icon
+                size="small"
+                :color="status.color"
+              >
+                mdi-circle
+              </v-icon>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+    </template>
+
+    <!-- 操作列（查看全部模式） -->
+    <template #column-5 v-if="viewAllMode">
+      <v-btn-group
+        variant="text"
+        density="compact"
+      >
+        <v-btn
+          size="small"
+          icon="mdi-pencil"
+          @click="handleEdit"
+          color="primary"
+        />
+        <v-btn
+          size="small"
+          icon="mdi-content-copy"
+          @click="copyFullInfo"
+          color="info"
+        />
+        <v-btn
+          size="small"
+          :icon="itemData.archived ? 'mdi-archive-off' : 'mdi-archive'"
+          @click="handleArchive"
+          :color="itemData.archived ? 'warning' : 'grey'"
+        />
+      </v-btn-group>
+    </template>
+
+    <!-- 操作列（普通模式） -->
+    <template #column-4 v-if="!viewAllMode">
       <v-btn-group
         variant="text"
         density="compact"
@@ -157,6 +301,14 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  columns: {
+    type: Array,
+    default: () => [],
+  },
+  viewAllMode: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits([
@@ -171,15 +323,6 @@ const emit = defineEmits([
   'delete-category',
   'show-settings',
   'show-about',
-])
-
-// 列配置
-const columns = ref([
-  { cols: 1, align: 'center', title: '编号' },
-  { cols: 5, align: 'center', title: '标题' },
-  { cols: 2, align: 'center', title: '截止日期' },
-  { cols: 2, align: 'center', title: '状态' },
-  { cols: 2, align: 'center', title: '操作' },
 ])
 
 // 配置数据
@@ -257,6 +400,18 @@ const getStatusText = (status) => {
 // 获取优先级icon（基于配置）
 const getPriorityIcon = (priority) => {
   return priorityConfig.value[priority]?.icon || 'mdi-help-circle'
+}
+
+// 获取分类名称
+const getCategoryName = () => {
+  const category = props.categories.find(cat => cat.id === props.itemData.categoryId)
+  return category?.name || '未分类'
+}
+
+// 获取分类图标
+const getCategoryIcon = () => {
+  const category = props.categories.find(cat => cat.id === props.itemData.categoryId)
+  return category?.icon || 'mdi-folder'
 }
 
 // 处理复制事件
