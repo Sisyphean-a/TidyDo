@@ -25,9 +25,16 @@ export function useCategories() {
   }
 
   // 创建分类
-  const createNewCategory = async (name, icon = 'mdi-folder-outline') => {
+  const createNewCategory = async (name, icon = 'mdi-folder-outline', isFilterCategory = false, filterConditions = null) => {
     try {
-      const newCategory = createCategory(TodoItemService.generateId(), name, icon)
+      const newCategory = createCategory(
+        TodoItemService.generateId(), 
+        name, 
+        icon, 
+        true, // isExpanded
+        isFilterCategory,
+        filterConditions
+      )
       await CategoryService.save(newCategory)
       await loadCategories()
       return newCategory
@@ -40,7 +47,29 @@ export function useCategories() {
   // 更新分类
   const updateCategory = async (category, updates) => {
     try {
-      const updatedCategory = { ...category, ...updates }
+      // 确保数据可序列化
+      const updatedCategory = {
+        id: category.id,
+        name: updates.name || category.name,
+        icon: updates.icon || category.icon,
+        isExpanded: updates.isExpanded !== undefined ? updates.isExpanded : category.isExpanded,
+        isFilterCategory: updates.isFilterCategory !== undefined ? updates.isFilterCategory : (category.isFilterCategory || false),
+        filterConditions: updates.filterConditions ? {
+          endDateFrom: updates.filterConditions.endDateFrom || null,
+          endDateTo: updates.filterConditions.endDateTo || null,
+          statuses: [...(updates.filterConditions.statuses || [])],
+          categories: [...(updates.filterConditions.categories || [])],
+          tags: [...(updates.filterConditions.tags || [])],
+        } : (category.filterConditions || {
+          endDateFrom: null,
+          endDateTo: null,
+          statuses: [],
+          categories: [],
+          tags: [],
+        }),
+        createdAt: category.createdAt,
+        updatedAt: new Date().toISOString(),
+      }
       await CategoryService.save(updatedCategory)
       await loadCategories()
       return updatedCategory
