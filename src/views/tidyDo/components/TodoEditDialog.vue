@@ -283,9 +283,9 @@ const statusOptions = computed(() => {
   }))
 })
 
-// 分组选项
+// 分组选项（排除筛选类）
 const categoryOptions = computed(() => {
-  return props.categories || []
+  return (props.categories || []).filter(cat => !cat.isFilterCategory)
 })
 
 // 验证规则

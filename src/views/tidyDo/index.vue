@@ -34,6 +34,15 @@
             >
               {{ currentTodos.length }}
             </v-chip>
+            <v-chip
+              v-if="selectedCategory?.isFilterCategory"
+              size="small"
+              class="ms-2"
+              color="warning"
+              variant="tonal"
+            >
+              筛选类
+            </v-chip>
           </v-toolbar-title>
 
           <v-spacer />
@@ -54,7 +63,7 @@
             <v-btn
               prepend-icon="mdi-plus"
               @click="handleCreateTodo"
-              :disabled="!selectedCategory && !viewAllMode"
+              :disabled="(!selectedCategory && !viewAllMode) || selectedCategory?.isFilterCategory"
             >
               新增待办
             </v-btn>
@@ -146,7 +155,7 @@
                 :itemData="item"
                 :columns="tableColumns"
                 :categories="categories"
-                :viewAllMode="viewAllMode"
+                :viewAllMode="viewAllMode || selectedCategory?.isFilterCategory"
                 @edit="handleEditTodo"
                 @status-change="handleStatusChange"
                 @copy="handleCopy"
@@ -218,15 +227,16 @@ const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
 
 // 表格列配置
 const tableColumns = computed(() => {
+  const isFilterOrViewAllMode = viewAllMode.value || selectedCategory.value?.isFilterCategory
   const columns = [
     { cols: 1, align: 'center', title: '编号' },
     { cols: 5, align: 'center', title: '标题' },
     { cols: 2, align: 'center', title: '截止日期' },
-    { cols: viewAllMode.value ? 1 : 2, align: 'center', title: '状态' },
+    { cols: isFilterOrViewAllMode ? 1 : 2, align: 'center', title: '状态' },
   ]
   
-  // 在查看全部模式下，在操作列前添加分类列
-  if (viewAllMode.value) {
+  // 在查看全部模式或筛选类模式下，在操作列前添加分类列
+  if (isFilterOrViewAllMode) {
     columns.push({ cols: 1, align: 'center', title: '分类' })
   }
   
@@ -260,7 +270,44 @@ const currentTodos = computed(() => {
     // 查看全部模式：返回所有待办事项（根据 showArchived 状态过滤）
     return todos.value.filter(todo => showArchived.value || !todo.archived)
   }
+  
   if (!selectedCategoryId.value) return []
+  
+  // 如果是筛选类，应用筛选条件
+  if (selectedCategory.value?.isFilterCategory) {
+    const filterConditions = selectedCategory.value.filterConditions || {}
+    return todos.value.filter(todo => {
+      // 归档状态过滤
+      if (!showArchived.value && todo.archived) return false
+      
+      // 截止日期范围过滤
+      if (filterConditions.endDateFrom || filterConditions.endDateTo) {
+        if (!todo.endDate) return false
+        const todoDate = new Date(todo.endDate)
+        if (filterConditions.endDateFrom && todoDate < new Date(filterConditions.endDateFrom)) return false
+        if (filterConditions.endDateTo && todoDate > new Date(filterConditions.endDateTo)) return false
+      }
+      
+      // 状态过滤
+      if (filterConditions.statuses?.length > 0) {
+        if (!filterConditions.statuses.includes(todo.status)) return false
+      }
+      
+      // 分类过滤
+      if (filterConditions.categories?.length > 0) {
+        if (!filterConditions.categories.includes(todo.categoryId)) return false
+      }
+      
+      // 标签过滤
+      if (filterConditions.tags?.length > 0) {
+        if (!todo.tags || !todo.tags.some(tag => filterConditions.tags.includes(tag))) return false
+      }
+      
+      return true
+    })
+  }
+  
+  // 普通分类：返回该分类下的待办事项
   return getTodosByCategoryId(selectedCategoryId.value)
 })
 

@@ -40,7 +40,10 @@
               v-if="!isRailMode"
             >
               <div class="category-actions">
-                <span class="text-caption">
+                <span
+                  v-if="!category.isFilterCategory"
+                  class="text-caption"
+                >
                   {{ getCategoryTodoCount(category.id) }}
                 </span>
 
@@ -128,6 +131,14 @@
       @config-updated="handleConfigUpdated"
     />
 
+    <!-- 分类编辑对话框 -->
+    <category-edit-dialog
+      v-model="isCategoryDialogVisible"
+      :category="editingCategory"
+      :categories="categories"
+      @save="handleSaveCategory"
+    />
+
     <!-- 全局提示 -->
     <v-snackbar
       v-model="snackbar.visible"
@@ -143,6 +154,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import ConfigDialog from '@/components/ConfigDialog.vue'
+import CategoryEditDialog from './CategoryEditDialog.vue'
 import { useCategories } from '../composables/useCategories'
 
 const props = defineProps({
@@ -177,6 +189,8 @@ const {
 const isDrawerOpen = ref(true)
 const isRailMode = ref(false)
 const isConfigDialogVisible = ref(false)
+const isCategoryDialogVisible = ref(false)
+const editingCategory = ref(null)
 
 // 提示消息
 const snackbar = ref({
@@ -188,32 +202,14 @@ const snackbar = ref({
 
 // 创建分类
 const handleCreateCategory = async () => {
-  const name = prompt('请输入分类名称:')
-  if (!name) return
-
-  try {
-    await createNewCategory(name)
-    // 通知父组件分类数据已更新
-    emit('category-updated', categories.value)
-    showMessage('创建分类成功', 'success')
-  } catch (error) {
-    showMessage('创建分类失败', 'error')
-  }
+  editingCategory.value = null
+  isCategoryDialogVisible.value = true
 }
 
 // 编辑分类
 const handleEditCategory = async (category) => {
-  const name = prompt('请输入新的分类名称:', category.name)
-  if (!name || name === category.name) return
-
-  try {
-    await updateCategory(category, { name })
-    // 通知父组件分类数据已更新
-    emit('category-updated', categories.value)
-    showMessage('更新分类成功', 'success')
-  } catch (error) {
-    showMessage('更新分类失败', 'error')
-  }
+  editingCategory.value = category
+  isCategoryDialogVisible.value = true
 }
 
 // 删除分类
@@ -273,6 +269,37 @@ const showMessage = (message, color = 'success') => {
     message,
     color,
     timeout: 2000,
+  }
+}
+
+// 处理保存分类
+const handleSaveCategory = async (categoryData) => {
+  try {
+    if (editingCategory.value) {
+      // 编辑模式 - 确保数据结构正确
+      const updates = {
+        name: categoryData.name,
+        icon: categoryData.icon,
+        isFilterCategory: categoryData.isFilterCategory,
+        filterConditions: categoryData.filterConditions,
+      }
+      await updateCategory(editingCategory.value, updates)
+      showMessage('更新分类成功', 'success')
+    } else {
+      // 新建模式
+      await createNewCategory(
+        categoryData.name, 
+        categoryData.icon, 
+        categoryData.isFilterCategory, 
+        categoryData.filterConditions
+      )
+      showMessage('创建分类成功', 'success')
+    }
+    // 通知父组件分类数据已更新
+    emit('category-updated', categories.value)
+  } catch (error) {
+    console.error('保存分类失败：', error)
+    showMessage(editingCategory.value ? '更新分类失败' : '创建分类失败', 'error')
   }
 }
 

@@ -5,11 +5,19 @@ export const TODO_CATEGORIES_KEY = 'todo-categories'
 export const TODO_ITEMS_KEY = 'todo-items'
 
 // 分类数据结构
-export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true) => ({
+export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, filterConditions = null) => ({
   id,
   name,
   icon,
   isExpanded,
+  isFilterCategory, // 是否为筛选类
+  filterConditions: filterConditions || {
+    endDateFrom: null,
+    endDateTo: null,
+    statuses: [],
+    categories: [],
+    tags: [],
+  },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 })
@@ -56,14 +64,38 @@ export class CategoryService {
     const categories = await this.getAll()
     const existingIndex = categories.findIndex((cat) => cat.id === category.id)
 
+    // 确保分类数据可序列化
+    const sanitizedCategory = {
+      id: category.id,
+      name: category.name,
+      icon: category.icon || 'mdi-folder',
+      isExpanded: category.isExpanded !== undefined ? category.isExpanded : true,
+      isFilterCategory: category.isFilterCategory || false,
+      filterConditions: category.filterConditions ? {
+        endDateFrom: category.filterConditions.endDateFrom || null,
+        endDateTo: category.filterConditions.endDateTo || null,
+        statuses: Array.isArray(category.filterConditions.statuses) ? [...category.filterConditions.statuses] : [],
+        categories: Array.isArray(category.filterConditions.categories) ? [...category.filterConditions.categories] : [],
+        tags: Array.isArray(category.filterConditions.tags) ? [...category.filterConditions.tags] : [],
+      } : {
+        endDateFrom: null,
+        endDateTo: null,
+        statuses: [],
+        categories: [],
+        tags: [],
+      },
+      createdAt: category.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
     if (existingIndex >= 0) {
-      categories[existingIndex] = { ...category, updatedAt: new Date().toISOString() }
+      categories[existingIndex] = sanitizedCategory
     } else {
-      categories.push(category)
+      categories.push(sanitizedCategory)
     }
 
     await set(TODO_CATEGORIES_KEY, categories)
-    return category
+    return sanitizedCategory
   }
 
   static async delete(id) {
