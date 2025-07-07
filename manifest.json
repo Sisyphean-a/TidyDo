@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "TidyDo - 待办事项管理器",
+  "version": "1.0.0",
+  "description": "高效的待办事项管理工具，帮助您整理和跟踪日常任务",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "action": {
+    "default_title": "TidyDo",
+    "default_icon": {
+      "16": "public/favicon.ico",
+      "48": "public/favicon.ico",
+      "128": "public/favicon.ico"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "public/favicon.ico",
+    "48": "public/favicon.ico",
+    "128": "public/favicon.ico"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "*.js", "*.css", "extension-index.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+} 
