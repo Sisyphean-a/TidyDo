@@ -63,9 +63,8 @@
             <v-col cols="6">
               <v-text-field
                 v-model="formData.endDate"
-                label="结束日期 *"
+                label="结束日期"
                 type="date"
-                :rules="endDateRules"
                 variant="outlined"
                 density="comfortable"
               />
@@ -125,6 +124,17 @@
                   closable-chips
                   class="mb-4"
                 />
+
+                <!-- 分组 -->
+                <v-select
+                  v-model="formData.categoryId"
+                  label="分组"
+                  :items="categoryOptions"
+                  variant="outlined"
+                  density="comfortable"
+                  item-title="name"
+                  item-value="id"
+                />
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
@@ -151,7 +161,12 @@
                 </v-col>
                 <v-col cols="6">
                   <div class="text-caption text-medium-emphasis">分类</div>
-                  <div class="text-body-2">{{ getCategoryName(item?.categoryId) }}</div>
+                  <div class="text-body-2">
+                    {{ getCategoryName(item?.categoryId) }}
+                    <span v-if="formData.categoryId && formData.categoryId !== item?.categoryId" class="text-primary">
+                      → {{ getCategoryName(formData.categoryId) }}
+                    </span>
+                  </div>
                 </v-col>
               </v-row>
             </v-card-text>
@@ -242,6 +257,7 @@ const formData = ref({
   endDate: null,
   assignee: null,
   tags: [],
+  categoryId: null,
 })
 
 // 计算属性
@@ -267,13 +283,17 @@ const statusOptions = computed(() => {
   }))
 })
 
+// 分组选项
+const categoryOptions = computed(() => {
+  return props.categories || []
+})
+
 // 验证规则
 const titleRules = [
   (v) => !!v || '标题不能为空',
   (v) => (v && v.length <= 100) || '标题不能超过100个字符',
 ]
 
-const endDateRules = [(v) => !!v || '结束日期不能为空']
 
 // 初始化表单数据
 const initFormData = () => {
@@ -288,6 +308,7 @@ const initFormData = () => {
       endDate: props.item.endDate || props.item.dueDate || null, // 兼容旧数据
       assignee: props.item.assignee || null,
       tags: [...(props.item.tags || [])],
+      categoryId: props.item.categoryId || null,
     }
   } else {
     // 创建模式
@@ -300,6 +321,7 @@ const initFormData = () => {
       endDate: null,
       assignee: null,
       tags: [],
+      categoryId: props.categoryId || null, // 默认使用传入的分组ID
     }
   }
 }
@@ -348,9 +370,18 @@ const handleSave = async () => {
 
   isLoading.value = true
   try {
-    const todoData = {
-      ...formData.value,
-      categoryId: props.categoryId || props.item?.categoryId,
+    // 准备保存的数据
+    const todoData = { ...formData.value }
+    
+    // 处理分组ID逻辑
+    if (!todoData.categoryId) {
+      if (isCreateMode.value) {
+        // 创建模式：使用传入的当前分组
+        todoData.categoryId = props.categoryId
+      } else {
+        // 编辑模式：保持原有分组
+        todoData.categoryId = props.item?.categoryId
+      }
     }
 
     if (props.item) {
