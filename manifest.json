@@ -10,18 +10,18 @@
   "action": {
     "default_title": "TidyDo",
     "default_icon": {
-      "16": "public/favicon.ico",
-      "48": "public/favicon.ico",
-      "128": "public/favicon.ico"
+      "16": "public/favicon.png",
+      "48": "public/favicon.png",
+      "128": "public/favicon.png"
     }
   },
   "background": {
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "public/favicon.ico",
-    "48": "public/favicon.ico",
-    "128": "public/favicon.ico"
+    "16": "public/favicon.png",
+    "48": "public/favicon.png",
+    "128": "public/favicon.png"
   },
   "web_accessible_resources": [
     {
