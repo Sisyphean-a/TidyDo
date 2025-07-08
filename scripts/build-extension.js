@@ -30,19 +30,20 @@ async function buildExtension() {
     // extension-index.html 已经被 Vite 构建过了，不需要再复制
     console.log('✓ 扩展主页面已由Vite构建')
     
-    // 复制favicon.ico
+    // 复制图标文件
     console.log('🖼️  复制图标文件...')
     await fs.mkdir(path.join(distDir, 'public'), { recursive: true })
     await fs.copyFile(
       path.join(projectRoot, 'public/favicon.ico'),
       path.join(distDir, 'public/favicon.ico')
     )
-    
-    // 复制favicon.ico到根目录（供extension-index.html使用）
     await fs.copyFile(
-      path.join(projectRoot, 'public/favicon.ico'),
-      path.join(distDir, 'favicon.ico')
+      path.join(projectRoot, 'public/favicon.png'), 
+      path.join(distDir, 'public/favicon.png')
     )
+    // 移除dist-extension/favicon.ico和png
+    await fs.unlink(path.join(distDir, 'favicon.ico'))
+    await fs.unlink(path.join(distDir, 'favicon.png'))
     
     console.log('✅ Chrome扩展构建完成！')
     console.log(`📁 输出目录: ${distDir}`)
