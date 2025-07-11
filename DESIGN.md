@@ -311,3 +311,121 @@ TidyDo采用现代前端架构，注重代码组织、用户体验和可扩展�
 - 💡 **用户友好**: 直观的界面和流畅的交互
 - 📱 **响应式**: 适配各种设备和屏幕尺寸
 - 🚀 **性能优化**: 合理的状态管理和渲染策略 
+
+
+-------------------------------------
+
+## 🏗️ 新架构概览
+
+### 1. **分层架构设计**
+```
+📁 src/
+├── 📁 stores/           # 状态管理层
+│   └── todoStore.js     # 统一的状态管理
+├── 📁 services/         # 业务逻辑层
+│   └── todoBusinessService.js  # 业务服务与工具
+├── 📁 components/       # 组件层
+│   ├── 📁 base/         # 基础UI组件
+│   │   ├── DataTable.vue
+│   │   ├── DataCard.vue
+│   │   └── EmptyState.vue
+│   ├── 📁 todo/         # 业务组件
+│   │   ├── TodoItem.vue
+│   │   └── TodoListView.vue
+│   ├── 📁 layout/       # 布局组件
+│   │   ├── TodoSidebar.vue
+│   │   └── TodoToolbar.vue
+│   └── 📁 modal/        # 模态框系统
+│       └── TodoEditModal.vue
+└── 📁 views/            # 页面容器
+    └── tidyDo/
+        ├── TodoApp.vue  # 主应用容器
+        └── index.vue    # 路由入口
+```
+
+### 2. **核心设计原则**
+
+#### **单一职责原则**
+- **状态管理**：`todoStore.js` 专注于状态管理和数据流
+- **业务逻辑**：`todoBusinessService.js` 封装业务规则和数据处理
+- **UI组件**：每个组件只关注自己的UI展示和交互
+
+#### **关注点分离**
+- **数据层**：纯粹的数据存储和检索
+- **业务层**：业务规则、验证和数据转换
+- **视图层**：UI渲染和用户交互
+
+#### **组合优于继承**
+- 通过小而专的组件组合构建复杂功能
+- 高度可复用的基础组件
+- 灵活的插槽系统支持定制
+
+### 3. **技术亮点**
+
+#### **🎯 统一状态管理**
+```javascript
+// 清晰的状态结构
+const viewState = ref({
+  selectedCategoryId: null,
+  viewMode: 'list',
+  showArchived: false,
+  sortConfig: { field: 'endDate', order: 'asc' }
+})
+
+// 响应式计算属性
+const filteredTodos = computed(() => {
+  // 智能过滤逻辑
+})
+```
+
+#### **🚀 业务逻辑封装**
+```javascript
+// 业务规则验证
+TodoBusinessService.canCreateTodo(category)
+TodoBusinessService.canEditTodo(todo)
+
+// 数据格式化
+TodoBusinessService.formatTodoForDisplay(todo, category)
+
+// 快速操作
+TodoBusinessService.quickUpdateStatus(todo, status, updateFn)
+```
+
+#### **🎨 优雅的组件设计**
+- **DataTable**: 通用表格组件，支持排序、选择、自定义渲染
+- **DataCard**: 灵活的卡片组件，支持多种布局
+- **EmptyState**: 友好的空状态展示
+- **TodoItem**: 支持表格和卡片两种视图模式
+
+### 4. **新功能特性**
+
+#### **🔍 增强的搜索功能**
+- 实时搜索过滤
+- 支持标题、描述、标签多字段搜索
+- 防抖优化性能
+
+#### **📊 多视图支持**
+- **表格视图**: 高密度数据展示
+- **卡片视图**: 美观的卡片布局
+- **网格视图**: 灵活的网格排列
+
+#### **⚡ 批量操作**
+- 批量状态更新
+- 批量归档/取消归档
+- 智能选择管理
+
+#### **🎯 业务规则引擎**
+- 权限验证
+- 数据验证
+- 业务逻辑规则
+
+### 5. **性能优化**
+
+#### **📈 计算属性优化**
+```javascript
+// 智能缓存和依赖追踪
+const displayTodos = computed(() => {
+  // 复杂的过滤、排序和搜索逻辑
+  // 只在依赖项变化时重新计算
+})
+```
