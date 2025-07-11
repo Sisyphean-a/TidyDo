@@ -441,7 +441,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineProps, defineEmits, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
 import { DataService } from '@/services/dataService'
 

@@ -35,8 +35,6 @@
 </template>
 
 <script setup>
-import { defineProps, computed } from 'vue'
-
 const props = defineProps({
   // 列配置数组
   columns: {

@@ -179,7 +179,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
 import TableRow from './TableRow.vue'
 
