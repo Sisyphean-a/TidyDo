@@ -116,11 +116,6 @@
             :title="isRailMode ? '' : '设置'"
             @click="handleSettingsClick"
           />
-          <v-list-item
-            prepend-icon="mdi-information"
-            :title="isRailMode ? '' : '关于'"
-            @click="$emit('show-about')"
-          />
         </v-list>
       </template>
     </v-navigation-drawer>

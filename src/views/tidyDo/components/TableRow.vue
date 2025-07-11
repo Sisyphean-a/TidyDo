@@ -15,7 +15,7 @@
       :cols="column.cols || 1"
       :class="[
         'table-column',
-        getAlignmentClass(column.align || 'center'),
+        isHeader ? 'text-center' : getAlignmentClass(column.align || 'center'),
         isHeader ? 'text-body-2 font-weight-bold' : '',
         column.class || ''
       ]"
