@@ -1,12 +1,13 @@
 <template>
-  <div class="data-table">
+  <div class="data-table bg-white border border-gray-200 rounded-lg overflow-hidden">
     <!-- 表头 -->
-    <div class="table-header">
-      <div class="table-row header-row">
+    <div class="table-header bg-gray-50 border-b border-gray-200">
+      <div class="flex items-center min-h-[48px] px-4">
+        <!-- 选择框列 -->
         <div
           v-if="selectable"
-          class="table-cell checkbox-cell"
-          :cols="1"
+          class="flex justify-center items-center flex-shrink-0"
+          style="flex-basis: 60px; min-width: 60px;"
         >
           <v-checkbox
             v-model="selectAll"
@@ -16,33 +17,36 @@
             hide-details
           />
         </div>
+        
+        <!-- 数据列 -->
         <div
           v-for="column in columns"
           :key="column.key"
           :class="[
-            'table-cell',
-            'text-' + (column.align || 'left'),
-            column.sortable ? 'sortable' : ''
+            'flex items-center px-2',
+            getColumnWidthClass(column),
+            getAlignmentClass(column.align || 'left'),
+            column.sortable ? 'cursor-pointer hover:text-blue-600' : ''
           ]"
-          :cols="column.cols || 1"
+          :style="getColumnStyle(column)"
         >
           <div
             v-if="column.sortable"
             @click="handleSort(column.key)"
-            class="sortable-header"
+            class="flex items-center select-none"
           >
-            <span class="text-subtitle-2 font-weight-bold">{{ column.title }}</span>
+            <span class="text-sm font-bold">{{ column.title }}</span>
             <v-icon
               v-if="sortBy === column.key"
               size="small"
-              class="ms-1"
+              class="ml-1"
             >
               {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
             </v-icon>
           </div>
           <span
             v-else
-            class="text-subtitle-2 font-weight-bold"
+            class="text-sm font-bold"
           >{{ column.title }}</span>
         </div>
       </div>
@@ -53,14 +57,19 @@
       <div
         v-for="(item, index) in data"
         :key="getItemKey(item, index)"
-        class="table-row data-row"
-        :class="{ 'row-selected': isSelected(item) }"
+        :class="[
+          'flex items-center min-h-[48px] px-4 border-b border-gray-100 transition-colors cursor-pointer',
+          'hover:bg-gray-50',
+          isSelected(item) ? 'bg-blue-50 hover:bg-blue-100' : '',
+          index === data.length - 1 ? 'border-b-0' : ''
+        ]"
         @click="handleRowClick(item)"
       >
+        <!-- 选择框列 -->
         <div
           v-if="selectable"
-          class="table-cell checkbox-cell"
-          :cols="1"
+          class="flex justify-center items-center flex-shrink-0"
+          style="flex-basis: 60px; min-width: 60px;"
         >
           <v-checkbox
             :model-value="isSelected(item)"
@@ -70,14 +79,17 @@
             @click.stop
           />
         </div>
+        
+        <!-- 数据列 -->
         <div
           v-for="column in columns"
           :key="column.key"
           :class="[
-            'table-cell',
-            'text-' + (column.align || 'left')
+            'flex items-center px-2 overflow-hidden',
+            getColumnWidthClass(column),
+            getAlignmentClass(column.align || 'left')
           ]"
-          :cols="column.cols || 1"
+          :style="getColumnStyle(column)"
         >
           <slot
             :name="`cell-${column.key}`"
@@ -85,7 +97,7 @@
             :column="column"
             :index="index"
           >
-            {{ getItemValue(item, column.key) }}
+            <span class="truncate">{{ getItemValue(item, column.key) }}</span>
           </slot>
         </div>
       </div>
@@ -94,25 +106,24 @@
     <!-- 空状态 -->
     <div
       v-if="data.length === 0"
-      class="empty-state"
+      class="empty-state py-16 text-center"
     >
       <slot name="empty">
-        <div class="text-center py-8">
-          <v-icon
-            size="48"
-            color="grey-lighten-2"
-          >
-            mdi-database-off
-          </v-icon>
-          <p class="text-h6 mt-2 text-medium-emphasis">暂无数据</p>
-        </div>
+        <v-icon
+          size="48"
+          color="grey-lighten-2"
+          class="mb-4"
+        >
+          mdi-database-off
+        </v-icon>
+        <p class="text-lg font-medium text-gray-500">暂无数据</p>
       </slot>
     </div>
 
     <!-- 加载状态 -->
     <div
       v-if="loading"
-      class="loading-overlay"
+      class="absolute inset-0 bg-white bg-opacity-80 flex justify-center items-center z-10"
     >
       <v-progress-circular
         indeterminate
@@ -242,6 +253,44 @@ const getItemValue = (item, key) => {
   return item[key] || ''
 }
 
+// 计算所有列的总宽度配置
+const getTotalCols = computed(() => {
+  return props.columns.reduce((total, column) => total + (column.cols || 1), 0)
+})
+
+// 获取列宽度类（基于实际列配置比例）
+const getColumnWidthClass = (column) => {
+  return `flex-shrink-0`
+}
+
+// 获取列的内联样式（基于实际列配置比例分配）
+const getColumnStyle = (column) => {
+  const cols = column.cols || 1
+  const totalCols = getTotalCols.value
+  
+  // 基于实际列配置计算比例
+  const flexBasis = `${(cols / totalCols) * 100}%`
+  
+  return {
+    flexBasis,
+    flexGrow: 0, // 不允许增长，严格按比例分配
+    minWidth: cols === 1 ? '80px' : cols === 2 ? '100px' : '120px'
+  }
+}
+
+// 获取对齐方式类
+const getAlignmentClass = (align) => {
+  switch (align) {
+    case 'left':
+      return 'justify-start text-left'
+    case 'right':
+      return 'justify-end text-right'
+    case 'center':
+    default:
+      return 'justify-center text-center'
+  }
+}
+
 // 监听选择状态
 watch(
   () => props.selectedItems.length,
@@ -258,107 +307,5 @@ watch(
 <style lang="scss" scoped>
 .data-table {
   position: relative;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: white;
-  overflow: hidden;
-}
-
-.table-header {
-  background: #f5f5f5;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.table-row {
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-  
-  &.header-row {
-    background: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
-  }
-  
-  &.data-row {
-    border-bottom: 1px solid #f0f0f0;
-    transition: background-color 0.2s;
-    cursor: pointer;
-    
-    &:hover {
-      background: #f9f9f9;
-    }
-    
-    &.row-selected {
-      background: #e3f2fd;
-      
-      &:hover {
-        background: #bbdefb;
-      }
-    }
-    
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-}
-
-.table-cell {
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  
-  &.checkbox-cell {
-    justify-content: center;
-  }
-  
-  &.text-left {
-    justify-content: flex-start;
-  }
-  
-  &.text-center {
-    justify-content: center;
-  }
-  
-  &.text-right {
-    justify-content: flex-end;
-  }
-  
-  &:first-child {
-    padding-left: 16px;
-  }
-  
-  &:last-child {
-    padding-right: 16px;
-  }
-}
-
-.sortable-header {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-  
-  &:hover {
-    color: #1976d2;
-  }
-}
-
-.empty-state {
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1;
 }
 </style> 

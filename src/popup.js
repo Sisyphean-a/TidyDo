@@ -16,6 +16,7 @@ import App from './App.vue'
 import router from './router'
 import { initializeConfig } from './services/configService'
 import { initializeDefaultData } from './services/todoService'
+import { TodoBusinessService } from './services/todoBusinessService'
 
 const vuetify = createVuetify({
   components,
@@ -44,6 +45,7 @@ app.use(vuetify)
 async function initializeApp() {
   try {
     await initializeConfig()
+    await TodoBusinessService.initialize()
     await initializeDefaultData()
   } catch (error) {
     console.error('应用初始化失败：', error)

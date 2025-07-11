@@ -394,11 +394,9 @@ const showNotification = (message, type = 'info', timeout = 3000) => {
 // 生命周期
 onMounted(async () => {
   try {
-    // 并行初始化store和业务服务配置
-    await Promise.all([
-      store.initialize(),
-      TodoBusinessService.initialize()
-    ])
+    // 先初始化业务服务配置，再初始化store
+    await TodoBusinessService.initialize()
+    await store.initialize()
   } catch (error) {
     showNotification('应用初始化失败', 'error')
   }

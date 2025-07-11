@@ -38,14 +38,32 @@ export class TodoBusinessService {
   }
 
   /**
-   * 获取状态配置
+   * 确保配置已初始化（同步方法，提供默认值）
+   */
+  static async ensureInitialized() {
+    if (!this._initialized) {
+      await this.initialize()
+    }
+  }
+
+  /**
+   * 获取状态配置（带默认值保护）
    */
   static getStatusConfig() {
-    return this._statusConfig
+    return this._statusConfig || {
+      pending: { text: '待办', color: 'warning' },
+      inProgress: { text: '进行中', color: 'info' },
+      completed: { text: '完成', color: 'success' },
+      cancelled: { text: '取消', color: 'error' }
+    }
   }
 
   static getPriorityConfig() {
-    return this._priorityConfig
+    return this._priorityConfig || {
+      low: { text: '低', icon: 'mdi-chevron-down' },
+      medium: { text: '中', icon: 'mdi-minus' },
+      high: { text: '高', icon: 'mdi-chevron-up' }
+    }
   }
 
   /**
@@ -81,16 +99,19 @@ export class TodoBusinessService {
    * 数据转换和格式化
    */
   static formatTodoForDisplay(todo, category = null) {
+    const statusConfig = this.getStatusConfig()
+    const priorityConfig = this.getPriorityConfig()
+    
     return {
       ...todo,
       displayNumber: todo.customNumber || `#${todo.id.slice(-8).toUpperCase()}`,
-      formattedEndDate: todo.endDate ? new Date(todo.endDate).toLocaleDateString() : null,
+      formattedEndDate: todo.endDate ? TodoUtils.formatDate(todo.endDate) : null,
       categoryName: category?.name || '未分类',
       categoryIcon: category?.icon || 'mdi-folder',
-      statusText: this._statusConfig?.[todo.status]?.text || '未知状态',
-      statusColor: this._statusConfig?.[todo.status]?.color || 'grey',
-      priorityText: this._priorityConfig?.[todo.priority]?.text || '中',
-      priorityIcon: this._priorityConfig?.[todo.priority]?.icon || 'mdi-minus',
+      statusText: statusConfig[todo.status]?.text || '未知状态',
+      statusColor: statusConfig[todo.status]?.color || 'grey',
+      priorityText: priorityConfig[todo.priority]?.text || '中',
+      priorityIcon: priorityConfig[todo.priority]?.icon || 'mdi-minus',
       isOverdue: todo.endDate && new Date(todo.endDate) < new Date(),
       remainingDays: todo.endDate ? this.calculateRemainingDays(todo.endDate) : null,
     }
@@ -113,19 +134,23 @@ export class TodoBusinessService {
    * 状态和优先级相关方法
    */
   static getStatusText(status) {
-    return this._statusConfig?.[status]?.text || '未知状态'
+    const statusConfig = this.getStatusConfig()
+    return statusConfig[status]?.text || '未知状态'
   }
 
   static getStatusColor(status) {
-    return this._statusConfig?.[status]?.color || 'grey'
+    const statusConfig = this.getStatusConfig()
+    return statusConfig[status]?.color || 'grey'
   }
 
   static getPriorityText(priority) {
-    return this._priorityConfig?.[priority]?.text || '中'
+    const priorityConfig = this.getPriorityConfig()
+    return priorityConfig[priority]?.text || '中'
   }
 
   static getPriorityIcon(priority) {
-    return this._priorityConfig?.[priority]?.icon || 'mdi-minus'
+    const priorityConfig = this.getPriorityConfig()
+    return priorityConfig[priority]?.icon || 'mdi-minus'
   }
 
   /**
@@ -138,10 +163,10 @@ export class TodoBusinessService {
     const diffTime = end - today
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     
-    if (diffDays < 0) return `逾期${Math.abs(diffDays)}天`
-    if (diffDays === 0) return '今天到期'
-    if (diffDays === 1) return '明天到期'
-    return `${diffDays}天后到期`
+    if (diffDays < 0) return `已过期`
+    if (diffDays === 0) return '今天'
+    if (diffDays === 1) return '明天'
+    return `${diffDays}天`
   }
 
   /**
@@ -383,7 +408,7 @@ export class TodoUtils {
   /**
    * 格式化日期
    */
-  static formatDate(date, format = 'YYYY-MM-DD') {
+  static formatDate(date, format = 'YYYY/MM/DD') {
     if (!date) return ''
     const d = new Date(date)
     if (isNaN(d.getTime())) return ''
@@ -392,7 +417,12 @@ export class TodoUtils {
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
     
-    return `${year}-${month}-${day}`
+    if (format === 'YYYY-MM-DD') {
+      return `${year}-${month}-${day}`
+    }
+    
+    // 默认格式 YYYY/MM/DD
+    return `${year}/${month}/${day}`
   }
 
   /**

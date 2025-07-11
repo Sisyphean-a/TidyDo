@@ -100,7 +100,7 @@
 
             <!-- 截止日期列 -->
             <template #cell-endDate="{ item }">
-              <div class="todo-date">
+              <div class="todo-date flex items-center">
                 <v-btn
                   variant="text"
                   density="compact"
@@ -110,13 +110,13 @@
                 >
                   {{ item.formattedEndDate || '未设置' }}
                 </v-btn>
-                <div
+                <span
                   v-if="item.remainingDays"
                   class="text-caption"
                   :class="getRemainingDaysClass(item)"
                 >
-                  {{ item.remainingDays }}
-                </div>
+                  ({{ item.remainingDays }})
+                </span>
               </div>
             </template>
 
@@ -397,7 +397,7 @@ const tableColumns = computed(() => {
 
 // 增强的待办事项数据（添加显示相关的计算属性）
 const enhancedTodos = computed(() => {
-  return props.todos.map(todo => {
+  return props.todos.map((todo) => {
     const category = getCategoryById(todo.categoryId)
     return TodoBusinessService.formatTodoForDisplay(todo, category)
   })
@@ -410,7 +410,7 @@ const statusOptions = computed(() => {
 
 // 工具函数
 const getCategoryById = (categoryId) => {
-  return props.categories.find(cat => cat.id === categoryId)
+  return props.categories.find((cat) => cat.id === categoryId)
 }
 
 const copyText = (text, type) => {
