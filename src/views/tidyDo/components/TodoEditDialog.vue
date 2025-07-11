@@ -214,7 +214,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineProps, defineEmits, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
 
 const props = defineProps({
