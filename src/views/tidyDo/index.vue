@@ -170,8 +170,8 @@
 
     <!-- 编辑弹窗 -->
     <TodoEditDialog
-      v-model="editDialog.visible"
-      :item="editDialog.item"
+      v-model="todoEditDialog.visible.value"
+      :item="todoEditDialog.data.value"
       :category-id="selectedCategoryId"
       :categories="categories"
       @save="handleSaveTodo"
@@ -180,12 +180,12 @@
 
     <!-- 全局提示 -->
     <v-snackbar
-      v-model="snackbar.visible"
-      :color="snackbar.color"
-      :timeout="snackbar.timeout"
+      v-model="notification.visible"
+      :color="notification.color"
+      :timeout="notification.timeout"
       location="top"
     >
-      {{ snackbar.message }}
+      {{ notification.message }}
     </v-snackbar>
   </v-app>
 </template>
@@ -197,8 +197,10 @@ import TodoItem from './components/TodoItem.vue'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import TableRow from './components/TableRow.vue'
 import { initializeDefaultData } from '@/services/todoService'
-import { useCategories } from './composables/useCategories'
-import { useTodos } from './composables/useTodos'
+import { useCategories } from '@/composables/useCategories'
+import { useTodos } from '@/composables/useTodos'
+import { useNotification } from '@/composables/useNotification'
+import { useDialog } from '@/composables/useDialog'
 
 // 使用组合式API
 const { categories, getCategoryById } = useCategories()
@@ -216,6 +218,10 @@ const {
   showArchived,
   toggleShowArchived,
 } = useTodos()
+
+// 通用状态管理
+const { notification, showSuccess, showError } = useNotification()
+const todoEditDialog = useDialog()
 
 // 响应式数据
 const selectedCategoryId = ref(null)
@@ -244,19 +250,6 @@ const tableColumns = computed(() => {
   columns.push({ cols: 2, align: 'center', title: '操作' })
 
   return columns
-})
-
-// 弹窗状态
-const editDialog = ref({
-  visible: false,
-  item: null,
-})
-
-// 提示消息
-const snackbar = ref({
-  visible: false,
-  message: '',
-  color: 'success',
 })
 
 // 计算属性
@@ -345,7 +338,7 @@ const loadTodos = async () => {
   try {
     await loadAllTodos()
   } catch (error) {
-    showMessage('加载待办事项失败', 'error')
+    showError('加载待办事项失败')
   }
 }
 
@@ -381,66 +374,61 @@ const handleCreateTodo = () => {
     // 在查看全部模式下，创建时需要用户选择分类
     // 默认选择第一个分类
     const defaultCategoryId = categories.value.length > 0 ? categories.value[0].id : null
-    editDialog.value = {
-      visible: true,
-      item: { categoryId: defaultCategoryId },
-    }
+    todoEditDialog.show({ categoryId: defaultCategoryId })
   } else {
-    editDialog.value = {
-      visible: true,
-      item: null,
-    }
+    todoEditDialog.show(null)
   }
 }
 
 const handleEditTodo = (item) => {
-  editDialog.value = {
-    visible: true,
-    item,
-  }
+  todoEditDialog.show(item)
 }
 
 // 处理状态变更
 const handleStatusChange = async ({ item, newStatus }) => {
   try {
     await updateTodoStatus(item, newStatus)
-    showMessage('状态更新成功', 'success')
+    showSuccess('状态更新成功')
   } catch (error) {
-    showMessage('状态更新失败', 'error')
+    showError('状态更新失败')
   }
 }
 
 const handleSaveTodo = async (todoData) => {
   try {
-    if (editDialog.value.item) {
+    if (todoEditDialog.data.value) {
       // 编辑模式
       await updateTodo(todoData)
-      showMessage('更新待办成功', 'success')
+      showSuccess('更新待办成功')
     } else {
       // 创建模式
       await createTodo(todoData)
-      showMessage('创建待办成功', 'success')
+      showSuccess('创建待办成功')
     }
 
-    editDialog.value.visible = false
+    todoEditDialog.hide()
   } catch (error) {
-    showMessage('保存待办失败', 'error')
+    showError('保存待办失败')
   }
 }
 
 const handleDeleteTodo = async (item) => {
   try {
     await deleteTodo(item.id)
-    editDialog.value.visible = false
-    showMessage('删除待办成功', 'success')
+    todoEditDialog.hide()
+    showSuccess('删除待办成功')
   } catch (error) {
-    showMessage('删除待办失败', 'error')
+    showError('删除待办失败')
   }
 }
 
 // 处理复制事件
 const handleCopy = ({ text, type }) => {
-  showMessage(type === 'error' ? text : `复制成功：${text}`, type === 'error' ? 'error' : 'success')
+  if (type === 'error') {
+    showError(text)
+  } else {
+    showSuccess(`复制成功：${text}`)
+  }
 }
 
 // 处理排序切换
@@ -474,19 +462,9 @@ const exitViewAllMode = () => {
 const handleArchive = async (item) => {
   try {
     await toggleTodoArchived(item)
-    showMessage(item.archived ? '取消归档成功' : '归档成功', 'success')
+    showSuccess(item.archived ? '取消归档成功' : '归档成功')
   } catch (error) {
-    showMessage('归档操作失败', 'error')
-  }
-}
-
-// 工具方法
-const showMessage = (message, color = 'success') => {
-  snackbar.value = {
-    visible: true,
-    message,
-    color,
-    timeout: 2000,
+    showError('归档操作失败')
   }
 }
 

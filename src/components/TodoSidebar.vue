@@ -150,7 +150,7 @@
 import { ref, computed, onMounted } from 'vue'
 import ConfigDialog from '@/model/ConfigDialog.vue'
 import CategoryEditDialog from '@/model/CategoryEditDialog.vue'
-import { useCategories } from '../views/tidyDo/composables/useCategories'
+import { useCategories } from '@/composables/useCategories'
 
 const props = defineProps({
   selectedCategoryId: {
