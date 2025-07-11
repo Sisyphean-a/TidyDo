@@ -230,7 +230,7 @@ const tableColumns = computed(() => {
   const isFilterOrViewAllMode = viewAllMode.value || selectedCategory.value?.isFilterCategory
   const columns = [
     { cols: 1, align: 'center', title: '编号' },
-    { cols: 5, align: 'center', title: '标题' },
+    { cols: 5, align: 'left', title: '标题' },
     { cols: 2, align: 'center', title: '截止日期' },
     { cols: isFilterOrViewAllMode ? 1 : 2, align: 'center', title: '状态' },
   ]
