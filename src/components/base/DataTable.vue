@@ -23,9 +23,8 @@
           v-for="column in columns"
           :key="column.key"
           :class="[
-            'flex items-center px-2',
+            'flex items-center px-2 justify-center text-center',
             getColumnWidthClass(column),
-            getAlignmentClass(column.align || 'left'),
             column.sortable ? 'cursor-pointer hover:text-blue-600' : ''
           ]"
           :style="getColumnStyle(column)"

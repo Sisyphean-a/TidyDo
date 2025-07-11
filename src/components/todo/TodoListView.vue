@@ -56,7 +56,6 @@
               <v-btn
                 variant="text"
                 density="compact"
-                size="small"
                 @click.stop="copyText(item.displayNumber, '编号')"
               >
                 <v-icon
@@ -81,13 +80,11 @@
                       v-bind="tooltipProps"
                       variant="text"
                       density="compact"
-                      class="text-truncate"
                       @click.stop="copyText(item.title, '标题')"
                     >
                       <v-icon
                         :color="item.statusColor"
                         size="small"
-                        class="me-2"
                       >
                         {{ item.priorityIcon }}
                       </v-icon>
@@ -104,7 +101,6 @@
                 <v-btn
                   variant="text"
                   density="compact"
-                  size="small"
                   :class="{ 'text-error': item.isOverdue }"
                   @click.stop="copyText(item.formattedEndDate || '未设置', '截止日期')"
                 >
@@ -112,7 +108,7 @@
                 </v-btn>
                 <span
                   v-if="item.remainingDays"
-                  class="text-caption"
+                  class="text-caption font-bold"
                   :class="getRemainingDaysClass(item)"
                 >
                   ({{ item.remainingDays }})
