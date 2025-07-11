@@ -10,7 +10,7 @@
     <div class="h-full flex flex-col">
       <!-- 侧边栏头部 -->
       <div class="py-2">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
           <v-icon
             size="32"
             color="primary"
@@ -30,11 +30,12 @@
 
       <!-- 分类列表 -->
       <div class="flex-1 overflow-hidden flex flex-col">
-        <div
-          v-if="!isRail"
-          class="flex items-center justify-between px-4 py-1 bg-gray-50"
-        >
-          <span class="text-subtitle-2 font-bold">分类</span>
+        <div class="flex items-center justify-between px-4 py-1 bg-gray-50">
+          <span
+            v-if="!isRail"
+            class="text-subtitle-2 font-bold"
+            >分类</span
+          >
           <v-btn
             icon
             size="x-small"
@@ -130,11 +131,6 @@
             @click="handleSettings"
           />
           <v-list-item
-            prepend-icon="mdi-information"
-            :title="isRail ? '' : '关于'"
-            @click="handleAbout"
-          />
-          <v-list-item
             :prepend-icon="isRail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'"
             :title="isRail ? '' : '收起'"
             @click="toggleRail"
@@ -142,12 +138,33 @@
         </v-list>
       </div>
     </div>
+
+    <!-- 分类编辑对话框 -->
+    <CategoryEditDialog
+      v-model="showCategoryDialog"
+      :category="editingCategory"
+      :categories="categories"
+      @save="handleSaveCategory"
+      @close="hideCategoryDialog"
+    />
+
+    <!-- 通知 -->
+    <v-snackbar
+      v-model="notification.visible"
+      :color="notification.color"
+      :timeout="notification.timeout"
+      location="top"
+    >
+      {{ notification.message }}
+    </v-snackbar>
   </v-navigation-drawer>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { TodoBusinessService } from '@/services/todoBusinessService'
+import { useTodoStore } from '@/stores/todoStore'
+import CategoryEditDialog from '@/components/modal/CategoryEditDialog.vue'
 
 const props = defineProps({
   // 分类列表
@@ -159,11 +176,6 @@ const props = defineProps({
   selectedCategoryId: {
     type: String,
     default: null,
-  },
-  // 分类待办数量
-  categoryCounts: {
-    type: Object,
-    default: () => ({}),
   },
   // 是否是查看全部模式
   isViewAllMode: {
@@ -187,71 +199,117 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits([
-  'category-select',
-  'category-create',
-  'category-edit',
-  'category-delete',
-  'view-all',
-  'settings',
-  'about',
-  'rail-toggle',
-])
+const emit = defineEmits(['category-select', 'view-all', 'settings', 'about', 'rail-toggle'])
+
+// 引入store
+const store = useTodoStore()
 
 // 状态
 const isOpen = ref(true)
 const isRail = ref(props.initialRail)
 const selectedCategories = ref([])
 
-// 计算属性
-const displayCategories = computed(() => {
-  return props.categories.map((category) =>
-    TodoBusinessService.formatCategoryForDisplay(category, getCategoryCount(category.id)),
-  )
+// 分类对话框状态
+const showCategoryDialog = ref(false)
+const editingCategory = ref(null)
+
+// 通知状态
+const notification = ref({
+  visible: false,
+  message: '',
+  color: 'success',
+  timeout: 1000,
 })
 
 // 方法
 const getCategoryCount = (categoryId) => {
-  return props.categoryCounts[categoryId] || 0
+  return store.todoCounts.value[categoryId] || 0
 }
 
 const handleCategorySelect = (category) => {
-  emit('category-select', category)
+  store.setSelectedCategory(category?.id || null)
+  store.setSelectedTodos([])
 }
 
 const handleCreateCategory = () => {
-  emit('category-create')
+  editingCategory.value = null
+  showCategoryDialog.value = true
 }
 
 const handleEditCategory = (category) => {
-  emit('category-edit', category)
+  editingCategory.value = category
+  showCategoryDialog.value = true
 }
 
-const handleDeleteCategory = (category) => {
+const handleDeleteCategory = async (category) => {
   // 检查是否可以删除
   const canDelete = TodoBusinessService.canDeleteCategory(category, [])
   if (!canDelete.canDelete) {
-    // 可以显示错误消息
+    showNotification('无法删除：该分类下还有待办事项', 'warning')
     return
   }
-  emit('category-delete', category)
+
+  try {
+    await store.deleteCategory(category.id)
+    showNotification('删除分类成功', 'success')
+  } catch (error) {
+    showNotification('删除分类失败', 'error')
+  }
+}
+
+const handleSaveCategory = async (categoryData) => {
+  try {
+    if (editingCategory.value) {
+      // 更新
+      await store.updateCategory({
+        ...categoryData,
+        id: editingCategory.value.id,
+      })
+      showNotification('更新分类成功', 'success')
+    } else {
+      // 创建
+      await store.createCategory(categoryData)
+      showNotification('创建分类成功', 'success')
+    }
+    hideCategoryDialog()
+  } catch (error) {
+    showNotification('保存分类失败', 'error')
+  }
+}
+
+const hideCategoryDialog = () => {
+  showCategoryDialog.value = false
+  editingCategory.value = null
 }
 
 const handleViewAll = () => {
-  emit('view-all')
+  store.setSelectedCategory(null)
+  store.setSelectedTodos([])
 }
 
 const handleSettings = () => {
-  emit('settings')
-}
-
-const handleAbout = () => {
-  emit('about')
+  store.showSettingsDialog()
 }
 
 const toggleRail = () => {
   isRail.value = !isRail.value
-  emit('rail-toggle', isRail.value)
+}
+
+// 通知系统
+const showNotification = (message, type = 'info', timeout = 1000) => {
+  const colorMap = {
+    success: 'green',
+    error: 'red',
+    warning: 'orange',
+    info: 'blue',
+  }
+
+  notification.value = {
+    visible: true,
+    message,
+    color: colorMap[type] || 'blue',
+    timeout,
+  }
 }
 
 // 暴露方法

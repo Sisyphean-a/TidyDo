@@ -14,10 +14,42 @@
  * - 数据导出
  */
 
+import { ConfigService } from './configService'
+
 export class TodoBusinessService {
+  // 配置缓存
+  static _statusConfig = null
+  static _priorityConfig = null
+  static _initialized = false
+
+  /**
+   * 初始化配置
+   * ConfigService保证了配置永远有值，所以这里无需处理错误情况
+   */
+  static async initialize() {
+    if (this._initialized) return
+
+    [this._statusConfig, this._priorityConfig] = await Promise.all([
+      ConfigService.getStatusConfig(),
+      ConfigService.getPriorityConfig(),
+    ])
+    
+    this._initialized = true
+  }
+
+  /**
+   * 获取状态配置
+   */
+  static getStatusConfig() {
+    return this._statusConfig
+  }
+
+  static getPriorityConfig() {
+    return this._priorityConfig
+  }
+
   /**
    * 业务规则验证
-   * 检查是否可以执行相关操作
    */
   static canCreateTodo(category, user = null) {
     if (!category) return { canCreate: false, reason: '请选择分类' }
@@ -47,7 +79,6 @@ export class TodoBusinessService {
 
   /**
    * 数据转换和格式化
-   * 将原始数据转换为显示友好的格式
    */
   static formatTodoForDisplay(todo, category = null) {
     return {
@@ -56,10 +87,10 @@ export class TodoBusinessService {
       formattedEndDate: todo.endDate ? new Date(todo.endDate).toLocaleDateString() : null,
       categoryName: category?.name || '未分类',
       categoryIcon: category?.icon || 'mdi-folder',
-      statusText: this.getStatusText(todo.status),
-      statusColor: this.getStatusColor(todo.status),
-      priorityText: this.getPriorityText(todo.priority),
-      priorityIcon: this.getPriorityIcon(todo.priority),
+      statusText: this._statusConfig?.[todo.status]?.text || '未知状态',
+      statusColor: this._statusConfig?.[todo.status]?.color || 'grey',
+      priorityText: this._priorityConfig?.[todo.priority]?.text || '中',
+      priorityIcon: this._priorityConfig?.[todo.priority]?.icon || 'mdi-minus',
       isOverdue: todo.endDate && new Date(todo.endDate) < new Date(),
       remainingDays: todo.endDate ? this.calculateRemainingDays(todo.endDate) : null,
     }
@@ -79,59 +110,26 @@ export class TodoBusinessService {
   }
 
   /**
-   * 状态和优先级管理
-   * 提供状态和优先级相关的配置和转换
+   * 状态和优先级相关方法
    */
-  static getStatusOptions() {
-    return {
-      pending: { text: '待处理', color: 'grey' },
-      in_progress: { text: '进行中', color: 'primary' },
-      completed: { text: '已完成', color: 'success' },
-      cancelled: { text: '已取消', color: 'error' },
-    }
-  }
-
   static getStatusText(status) {
-    const statusMap = {
-      pending: '待处理',
-      in_progress: '进行中',
-      completed: '已完成',
-      cancelled: '已取消',
-    }
-    return statusMap[status] || '未知状态'
+    return this._statusConfig?.[status]?.text || '未知状态'
   }
 
   static getStatusColor(status) {
-    const colorMap = {
-      pending: 'grey',
-      in_progress: 'primary',
-      completed: 'success',
-      cancelled: 'error',
-    }
-    return colorMap[status] || 'grey'
+    return this._statusConfig?.[status]?.color || 'grey'
   }
 
   static getPriorityText(priority) {
-    const priorityMap = {
-      low: '低',
-      medium: '中',
-      high: '高',
-    }
-    return priorityMap[priority] || '中'
+    return this._priorityConfig?.[priority]?.text || '中'
   }
 
   static getPriorityIcon(priority) {
-    const iconMap = {
-      low: 'mdi-arrow-down',
-      medium: 'mdi-minus',
-      high: 'mdi-arrow-up',
-    }
-    return iconMap[priority] || 'mdi-minus'
+    return this._priorityConfig?.[priority]?.icon || 'mdi-minus'
   }
 
   /**
    * 日期计算
-   * 计算截止日期相关信息
    */
   static calculateRemainingDays(endDate) {
     if (!endDate) return null
@@ -148,7 +146,6 @@ export class TodoBusinessService {
 
   /**
    * 表格列配置
-   * 根据视图模式和显示需求返回表格列配置
    */
   static getTableColumns(viewMode = 'list', showCategory = false) {
     const baseColumns = [
@@ -169,7 +166,6 @@ export class TodoBusinessService {
 
   /**
    * 快速操作
-   * 提供快速更新状态和归档的功能
    */
   static async quickUpdateStatus(todo, newStatus, updateTodoFn) {
     try {
@@ -198,7 +194,6 @@ export class TodoBusinessService {
 
   /**
    * 批量操作
-   * 支持批量更新状态和归档
    */
   static async batchUpdateStatus(todos, newStatus, updateTodoFn) {
     const results = []
@@ -225,13 +220,12 @@ export class TodoBusinessService {
 
   /**
    * 数据统计
-   * 统计待办事项的各种状态数量和完成率
    */
   static getTodoStatistics(todos) {
     const total = todos.length
     const completed = todos.filter(todo => todo.status === 'completed').length
     const pending = todos.filter(todo => todo.status === 'pending').length
-    const inProgress = todos.filter(todo => todo.status === 'in_progress').length
+    const inProgress = todos.filter(todo => todo.status === 'inProgress').length
     const overdue = todos.filter(todo => 
       todo.endDate && new Date(todo.endDate) < new Date() && todo.status !== 'completed'
     ).length
@@ -250,7 +244,6 @@ export class TodoBusinessService {
 
   /**
    * 搜索和过滤
-   * 根据搜索词过滤待办事项
    */
   static searchTodos(todos, searchTerm) {
     if (!searchTerm) return todos
@@ -266,7 +259,6 @@ export class TodoBusinessService {
 
   /**
    * 导出数据
-   * 支持导出为JSON或CSV格式
    */
   static exportTodos(todos, format = 'json') {
     const exportData = todos.map(todo => ({
@@ -290,20 +282,23 @@ export class TodoBusinessService {
   }
 
   static convertToCSV(data) {
-    if (!data.length) return ''
-    
-    const headers = Object.keys(data[0])
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(key => `"${row[key] || ''}"`).join(','))
-    ].join('\n')
+    if (data.length === 0) return ''
 
-    return csvContent
+    const headers = Object.keys(data[0])
+    const csvHeaders = headers.join(',')
+
+    const csvRows = data.map(row => {
+      return headers.map(header => {
+        const value = row[header]
+        return `"${String(value).replace(/"/g, '""')}"`
+      }).join(',')
+    })
+
+    return [csvHeaders, ...csvRows].join('\n')
   }
 
   /**
    * 获取待办事项的完整信息
-   * 用于复制到剪贴板
    */
   static getTodoFullInfo(todo) {
     const lines = [
@@ -324,7 +319,6 @@ export class TodoBusinessService {
 
 /**
  * 通知服务
- * 提供统一的通知消息格式
  */
 export class NotificationService {
   static success(message, options = {}) {
@@ -366,7 +360,6 @@ export class NotificationService {
 
 /**
  * 工具函数
- * 提供通用的工具方法
  */
 export class TodoUtils {
   /**

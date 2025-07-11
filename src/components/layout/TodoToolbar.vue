@@ -139,11 +139,6 @@
               title="导出数据"
               @click="handleExport"
             />
-            <v-list-item
-              prepend-icon="mdi-cog"
-              title="设置"
-              @click="handleSettings"
-            />
           </slot>
         </v-list>
       </v-menu>
@@ -309,9 +304,5 @@ const handleSelectAll = () => {
 
 const handleExport = () => {
   emit('export')
-}
-
-const handleSettings = () => {
-  emit('settings')
 }
 </script>
