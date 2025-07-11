@@ -148,9 +148,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import ConfigDialog from '@/components/ConfigDialog.vue'
-import CategoryEditDialog from './CategoryEditDialog.vue'
-import { useCategories } from '../composables/useCategories'
+import ConfigDialog from '@/model/ConfigDialog.vue'
+import CategoryEditDialog from '@/model/CategoryEditDialog.vue'
+import { useCategories } from '../views/tidyDo/composables/useCategories'
 
 const props = defineProps({
   selectedCategoryId: {
@@ -215,13 +215,13 @@ const handleDeleteCategory = async (category) => {
 
   try {
     await deleteCategory(category.id)
-    
+
     // 如果删除的是当前选中的分类，需要通知父组件
     if (props.selectedCategoryId === category.id) {
       const newCategory = categories.value.length > 0 ? categories.value[0] : null
       emit('category-select', newCategory)
     }
-    
+
     // 通知父组件分类数据已更新
     emit('category-updated', categories.value)
     showMessage('删除分类成功', 'success')
@@ -283,10 +283,10 @@ const handleSaveCategory = async (categoryData) => {
     } else {
       // 新建模式
       await createNewCategory(
-        categoryData.name, 
-        categoryData.icon, 
-        categoryData.isFilterCategory, 
-        categoryData.filterConditions
+        categoryData.name,
+        categoryData.icon,
+        categoryData.isFilterCategory,
+        categoryData.filterConditions,
       )
       showMessage('创建分类成功', 'success')
     }

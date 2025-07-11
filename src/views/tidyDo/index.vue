@@ -7,7 +7,6 @@
       :todo-counts="todoCounts"
       @category-select="handleCategorySelect"
       @category-updated="handleCategoryUpdated"
-      @show-about="showAbout = true"
       @view-all="handleViewAll"
     />
 
@@ -23,8 +22,10 @@
           class="border-b"
         >
           <v-toolbar-title class="d-flex align-center">
-            <v-icon class="me-2">{{ viewAllMode ? 'mdi-view-list' : (selectedCategory?.icon || 'mdi-folder') }}</v-icon>
-            {{ viewAllMode ? '全部待办' : (selectedCategory?.name || '请选择分类') }}
+            <v-icon class="me-2">{{
+              viewAllMode ? 'mdi-view-list' : selectedCategory?.icon || 'mdi-folder'
+            }}</v-icon>
+            {{ viewAllMode ? '全部待办' : selectedCategory?.name || '请选择分类' }}
             <v-chip
               v-if="currentTodos.length > 0"
               size="small"
@@ -191,9 +192,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import TodoSidebar from './components/TodoSidebar.vue'
+import TodoSidebar from '@/components/TodoSidebar.vue'
 import TodoItem from './components/TodoItem.vue'
-import TodoEditDialog from './components/TodoEditDialog.vue'
+import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import TableRow from './components/TableRow.vue'
 import { initializeDefaultData } from '@/services/todoService'
 import { useCategories } from './composables/useCategories'
@@ -234,14 +235,14 @@ const tableColumns = computed(() => {
     { cols: 2, align: 'center', title: '截止日期' },
     { cols: isFilterOrViewAllMode ? 1 : 2, align: 'center', title: '状态' },
   ]
-  
+
   // 在查看全部模式或筛选类模式下，在操作列前添加分类列
   if (isFilterOrViewAllMode) {
     columns.push({ cols: 1, align: 'center', title: '分类' })
   }
-  
+
   columns.push({ cols: 2, align: 'center', title: '操作' })
-  
+
   return columns
 })
 
@@ -250,8 +251,6 @@ const editDialog = ref({
   visible: false,
   item: null,
 })
-
-const showAbout = ref(false)
 
 // 提示消息
 const snackbar = ref({
@@ -268,45 +267,48 @@ const selectedCategory = computed(() => {
 const currentTodos = computed(() => {
   if (viewAllMode.value) {
     // 查看全部模式：返回所有待办事项（根据 showArchived 状态过滤）
-    return todos.value.filter(todo => showArchived.value || !todo.archived)
+    return todos.value.filter((todo) => showArchived.value || !todo.archived)
   }
-  
+
   if (!selectedCategoryId.value) return []
-  
+
   // 如果是筛选类，应用筛选条件
   if (selectedCategory.value?.isFilterCategory) {
     const filterConditions = selectedCategory.value.filterConditions || {}
-    return todos.value.filter(todo => {
+    return todos.value.filter((todo) => {
       // 归档状态过滤
       if (!showArchived.value && todo.archived) return false
-      
+
       // 截止日期范围过滤
       if (filterConditions.endDateFrom || filterConditions.endDateTo) {
         if (!todo.endDate) return false
         const todoDate = new Date(todo.endDate)
-        if (filterConditions.endDateFrom && todoDate < new Date(filterConditions.endDateFrom)) return false
-        if (filterConditions.endDateTo && todoDate > new Date(filterConditions.endDateTo)) return false
+        if (filterConditions.endDateFrom && todoDate < new Date(filterConditions.endDateFrom))
+          return false
+        if (filterConditions.endDateTo && todoDate > new Date(filterConditions.endDateTo))
+          return false
       }
-      
+
       // 状态过滤
       if (filterConditions.statuses?.length > 0) {
         if (!filterConditions.statuses.includes(todo.status)) return false
       }
-      
+
       // 分类过滤
       if (filterConditions.categories?.length > 0) {
         if (!filterConditions.categories.includes(todo.categoryId)) return false
       }
-      
+
       // 标签过滤
       if (filterConditions.tags?.length > 0) {
-        if (!todo.tags || !todo.tags.some(tag => filterConditions.tags.includes(tag))) return false
+        if (!todo.tags || !todo.tags.some((tag) => filterConditions.tags.includes(tag)))
+          return false
       }
-      
+
       return true
     })
   }
-  
+
   // 普通分类：返回该分类下的待办事项
   return getTodosByCategoryId(selectedCategoryId.value)
 })
@@ -358,14 +360,17 @@ const handleCategorySelect = (category) => {
 
 const handleCategoryUpdated = (updatedCategories) => {
   categories.value = updatedCategories
-  
+
   // 如果没有选中分类且有分类，选中第一个
   if (!selectedCategoryId.value && categories.value.length > 0) {
     selectedCategoryId.value = categories.value[0].id
   }
-  
+
   // 如果当前选中的分类不存在了，清空选择
-  if (selectedCategoryId.value && !categories.value.find(cat => cat.id === selectedCategoryId.value)) {
+  if (
+    selectedCategoryId.value &&
+    !categories.value.find((cat) => cat.id === selectedCategoryId.value)
+  ) {
     selectedCategoryId.value = categories.value.length > 0 ? categories.value[0].id : null
   }
 }
