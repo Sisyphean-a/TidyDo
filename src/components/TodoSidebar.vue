@@ -150,7 +150,7 @@
 import { ref, computed, onMounted } from 'vue'
 import ConfigDialog from '@/model/ConfigDialog.vue'
 import CategoryEditDialog from '@/model/CategoryEditDialog.vue'
-import { useCategories } from '@/composables/useCategories'
+import { useCategoriesStore } from '@/stores/useCategoriesStore'
 
 const props = defineProps({
   selectedCategoryId: {
@@ -170,15 +170,11 @@ const emit = defineEmits([
   'view-all',
 ])
 
-// 使用分类管理组合式API
-const {
-  categories,
-  isLoading: categoryLoading,
-  loadCategories,
-  createNewCategory,
-  updateCategory,
-  deleteCategory,
-} = useCategories()
+// 使用分类管理 Pinia Store
+const categoriesStore = useCategoriesStore()
+
+// 本地计算属性
+const categories = computed(() => categoriesStore.categories)
 
 // 内部状态
 const isDrawerOpen = ref(true)
@@ -214,7 +210,7 @@ const handleDeleteCategory = async (category) => {
   }
 
   try {
-    await deleteCategory(category.id)
+    await categoriesStore.deleteCategory(category.id)
 
     // 如果删除的是当前选中的分类，需要通知父组件
     if (props.selectedCategoryId === category.id) {
@@ -278,11 +274,11 @@ const handleSaveCategory = async (categoryData) => {
         isFilterCategory: categoryData.isFilterCategory,
         filterConditions: categoryData.filterConditions,
       }
-      await updateCategory(editingCategory.value, updates)
+      await categoriesStore.updateCategory(editingCategory.value, updates)
       showMessage('更新分类成功', 'success')
     } else {
       // 新建模式
-      await createNewCategory(
+      await categoriesStore.createNewCategory(
         categoryData.name,
         categoryData.icon,
         categoryData.isFilterCategory,
@@ -300,14 +296,14 @@ const handleSaveCategory = async (categoryData) => {
 
 // 暴露方法给父组件使用
 defineExpose({
-  loadCategories,
-  categories: computed(() => categories.value),
+  loadCategories: categoriesStore.loadCategories,
+  categories,
 })
 
 // 组件挂载时加载数据
 onMounted(async () => {
   try {
-    await loadCategories()
+    await categoriesStore.loadCategories()
     // 通知父组件分类数据已更新
     emit('category-updated', categories.value)
   } catch (error) {
