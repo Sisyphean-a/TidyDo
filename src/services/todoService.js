@@ -5,12 +5,13 @@ export const TODO_CATEGORIES_KEY = 'todo-categories'
 export const TODO_ITEMS_KEY = 'todo-items'
 
 // 分类数据结构
-export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, filterConditions = null) => ({
+export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, filterConditions = null, order = 0) => ({
   id,
   name,
   icon,
   isExpanded,
   isFilterCategory, // 是否为筛选类
+  order, // 排序字段
   filterConditions: filterConditions || {
     endDateFrom: null,
     endDateTo: null,
@@ -52,7 +53,13 @@ export const createTodoItem = (
 export class CategoryService {
   static async getAll() {
     const categories = (await get(TODO_CATEGORIES_KEY)) || []
-    return categories
+    // 按 order 字段排序，如果没有 order 字段则按创建时间排序
+    return categories.sort((a, b) => {
+      if (a.order !== undefined && b.order !== undefined) {
+        return a.order - b.order
+      }
+      return new Date(a.createdAt) - new Date(b.createdAt)
+    })
   }
 
   static async getById(id) {
@@ -71,6 +78,7 @@ export class CategoryService {
       icon: category.icon || 'mdi-folder',
       isExpanded: category.isExpanded !== undefined ? category.isExpanded : true,
       isFilterCategory: category.isFilterCategory || false,
+      order: category.order !== undefined ? category.order : 0,
       filterConditions: category.filterConditions ? {
         endDateFrom: category.filterConditions.endDateFrom || null,
         endDateTo: category.filterConditions.endDateTo || null,
@@ -115,6 +123,35 @@ export class CategoryService {
       category.updatedAt = new Date().toISOString()
       await set(TODO_CATEGORIES_KEY, categories)
     }
+  }
+
+  // 更新分类排序
+  static async updateOrder(categoryId, direction) {
+    const categories = await get(TODO_CATEGORIES_KEY) || []
+    const currentIndex = categories.findIndex((cat) => cat.id === categoryId)
+    
+    if (currentIndex === -1) return false
+
+    let targetIndex
+    if (direction === 'up' && currentIndex > 0) {
+      targetIndex = currentIndex - 1
+    } else if (direction === 'down' && currentIndex < categories.length - 1) {
+      targetIndex = currentIndex + 1
+    } else {
+      return false // 无法移动
+    }
+
+    // 交换位置
+    [categories[currentIndex], categories[targetIndex]] = [categories[targetIndex], categories[currentIndex]]
+
+    // 更新 order 字段
+    categories.forEach((cat, index) => {
+      cat.order = index
+      cat.updatedAt = new Date().toISOString()
+    })
+
+    await set(TODO_CATEGORIES_KEY, categories)
+    return true
   }
 }
 
@@ -183,6 +220,10 @@ export const initializeDefaultData = async () => {
       TodoItemService.generateId(),
       '默认分类',
       'mdi-folder-outline',
+      true, // isExpanded
+      false, // isFilterCategory
+      null, // filterConditions
+      0 // order
     )
     await CategoryService.save(defaultCategory)
   }

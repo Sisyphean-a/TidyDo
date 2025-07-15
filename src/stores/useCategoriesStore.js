@@ -45,6 +45,10 @@ export const useCategoriesStore = defineStore('categories', () => {
     filterConditions = null,
   ) => {
     try {
+      // 获取当前分类数量，用于设置新分类的排序值
+      const currentCategories = await CategoryService.getAll()
+      const newOrder = currentCategories.length
+      
       const newCategory = createCategory(
         TodoItemService.generateId(),
         name,
@@ -52,6 +56,7 @@ export const useCategoriesStore = defineStore('categories', () => {
         true, // isExpanded
         isFilterCategory,
         filterConditions,
+        newOrder, // order
       )
       await CategoryService.save(newCategory)
       await loadCategories()
@@ -114,6 +119,20 @@ export const useCategoriesStore = defineStore('categories', () => {
     }
   }
 
+  // 移动分类（上移/下移）
+  const moveCategoryOrder = async (categoryId, direction) => {
+    try {
+      const success = await CategoryService.updateOrder(categoryId, direction)
+      if (success) {
+        await loadCategories()
+      }
+      return success
+    } catch (error) {
+      console.error('Move category error:', error)
+      throw error
+    }
+  }
+
   return {
     // 状态
     categories: allCategories,
@@ -130,5 +149,6 @@ export const useCategoriesStore = defineStore('categories', () => {
     createNewCategory,
     updateCategory,
     deleteCategory,
+    moveCategoryOrder,
   }
 })

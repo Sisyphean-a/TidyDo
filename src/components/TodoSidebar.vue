@@ -62,6 +62,19 @@
                   </template>
                   <v-list density="compact">
                     <v-list-item
+                      prepend-icon="mdi-arrow-up"
+                      title="上移"
+                      @click="handleMoveCategoryUp(category)"
+                      :disabled="isFirstCategory(category.id)"
+                    />
+                    <v-list-item
+                      prepend-icon="mdi-arrow-down"
+                      title="下移"
+                      @click="handleMoveCategoryDown(category)"
+                      :disabled="isLastCategory(category.id)"
+                    />
+                    <v-divider />
+                    <v-list-item
                       prepend-icon="mdi-pencil"
                       title="编辑"
                       @click="handleEditCategory(category)"
@@ -224,6 +237,48 @@ const handleDeleteCategory = async (category) => {
   } catch (error) {
     showMessage('删除分类失败', 'error')
   }
+}
+
+// 上移分类
+const handleMoveCategoryUp = async (category) => {
+  try {
+    const success = await categoriesStore.moveCategoryOrder(category.id, 'up')
+    if (success) {
+      // 通知父组件分类数据已更新
+      emit('category-updated', categories.value)
+      showMessage('分类上移成功', 'success')
+    } else {
+      showMessage('无法上移该分类', 'warning')
+    }
+  } catch (error) {
+    showMessage('分类上移失败', 'error')
+  }
+}
+
+// 下移分类
+const handleMoveCategoryDown = async (category) => {
+  try {
+    const success = await categoriesStore.moveCategoryOrder(category.id, 'down')
+    if (success) {
+      // 通知父组件分类数据已更新
+      emit('category-updated', categories.value)
+      showMessage('分类下移成功', 'success')
+    } else {
+      showMessage('无法下移该分类', 'warning')
+    }
+  } catch (error) {
+    showMessage('分类下移失败', 'error')
+  }
+}
+
+// 判断是否为第一个分类
+const isFirstCategory = (categoryId) => {
+  return categories.value.findIndex(cat => cat.id === categoryId) === 0
+}
+
+// 判断是否为最后一个分类
+const isLastCategory = (categoryId) => {
+  return categories.value.findIndex(cat => cat.id === categoryId) === categories.value.length - 1
 }
 
 // 切换轨道模式
