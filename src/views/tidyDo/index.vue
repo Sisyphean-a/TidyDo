@@ -20,7 +20,7 @@
         <TodoHeader @create-todo="handleCreateTodo" />
 
         <!-- Todo列表内容 -->
-        <TodoContent @create-todo="handleCreateTodo" />
+        <TodoContent ref="todoContentRef" @create-todo="handleCreateTodo" />
       </v-container>
     </v-main>
   </v-app>
@@ -45,6 +45,7 @@ const appStore = useAppStore()
 
 // 响应式数据
 const sidebarRef = ref(null)
+const todoContentRef = ref(null)
 
 // 数据加载
 const loadData = async () => {
@@ -57,10 +58,12 @@ const loadData = async () => {
   }
 }
 
-// 处理创建待办 - 为了向上兼容，保留这个方法
+// 处理创建待办
 const handleCreateTodo = () => {
-  // 由于TodoContent组件已经自己处理了，这里可以留空
-  // 或者添加一些全局的处理逻辑
+  // 调用TodoContent组件的handleCreateTodo方法
+  if (todoContentRef.value) {
+    todoContentRef.value.handleCreateTodo()
+  }
 }
 
 // 组件挂载

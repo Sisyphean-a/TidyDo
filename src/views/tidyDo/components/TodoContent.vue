@@ -110,7 +110,8 @@
 
     <!-- 编辑弹窗 -->
     <TodoEditDialog
-      v-model="todoEditDialog.visible.value"
+      :model-value="todoEditDialog.visible.value"
+      @update:model-value="todoEditDialog.visible.value = $event"
       :item="todoEditDialog.data.value"
       :category-id="appStore.selectedCategoryId"
       :categories="categoriesStore.categories"
@@ -252,11 +253,10 @@ const handleArchive = async (item) => {
 // 继续发出create-todo事件给父组件，保持向上兼容
 const emit = defineEmits(['create-todo'])
 
-// 当内部处理创建时，也发出事件
-const handleCreateTodoInternal = () => {
-  handleCreateTodo()
-  emit('create-todo')
-}
+// 暴露方法给父组件
+defineExpose({
+  handleCreateTodo
+})
 </script>
 
 <style scoped>

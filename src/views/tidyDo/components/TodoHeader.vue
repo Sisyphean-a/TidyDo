@@ -69,11 +69,8 @@
       </v-btn>
       <v-btn
         prepend-icon="mdi-plus"
-        @click="$emit('create-todo')"
-        :disabled="
-          (!appStore.selectedCategory && !appStore.viewAllMode) ||
-          appStore.selectedCategory?.isFilterCategory
-        "
+        @click="handleCreateTodoClick"
+        :disabled="isCreateButtonDisabled"
       >
         新增待办
       </v-btn>
@@ -93,6 +90,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 
@@ -102,6 +100,20 @@ const todosStore = useTodosStore()
 
 // 只需要保留create-todo事件，其他都可以直接调用store方法
 const emit = defineEmits(['create-todo'])
+
+// 计算按钮禁用状态
+const isCreateButtonDisabled = computed(() => {
+  const disabled = (!appStore.selectedCategory && !appStore.viewAllMode) ||
+    appStore.selectedCategory?.isFilterCategory  
+  return disabled
+})
+
+// 处理创建待办点击
+const handleCreateTodoClick = () => {
+  if (!isCreateButtonDisabled.value) {
+    emit('create-todo')
+  } 
+}
 </script>
 
 <style scoped>
