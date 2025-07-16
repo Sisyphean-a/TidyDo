@@ -39,7 +39,10 @@
             <v-icon :color="getStatusColor(itemData.status)">
               {{ getPriorityIcon(itemData.priority) }}
             </v-icon>
-            <span class="text-truncate"> {{ itemData.title }}</span>
+            <span 
+              class="text-truncate"
+              v-html="highlightText(itemData.title, searchQuery)"
+            ></span>
           </v-btn>
         </template>
       </v-tooltip>
@@ -208,6 +211,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  searchQuery: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits([
@@ -359,6 +366,14 @@ const loadConfig = async () => {
   }
 }
 
+// 搜索高亮工具函数
+const highlightText = (text, query) => {
+  if (!query || !text) return text
+  
+  const searchRegex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(searchRegex, '<mark class="search-highlight">$1</mark>')
+}
+
 // 组件挂载时加载配置
 onMounted(() => {
   console.log('item', props.itemData)
@@ -379,5 +394,21 @@ onMounted(() => {
   &:hover {
     opacity: 0.8;
   }
+}
+
+// 搜索高亮样式
+:deep(.search-highlight) {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+  animation: highlight-pulse 1s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% { background-color: #fff3cd; }
+  50% { background-color: #ffeaa7; }
+  100% { background-color: #fff3cd; }
 }
 </style>

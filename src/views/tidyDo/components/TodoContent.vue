@@ -19,20 +19,44 @@
       v-else-if="currentTodos.length === 0"
       class="text-center pa-12"
     >
-      <v-icon
-        size="64"
-        color="grey-lighten-2"
-        >mdi-clipboard-check</v-icon
-      >
-      <h3 class="text-h6 mt-4 text-medium-emphasis">还没有待办事项</h3>
-      <p class="text-body-2 text-medium-emphasis mb-4">点击"新增待办"创建第一个待办事项</p>
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-plus"
-        @click="$emit('create-todo')"
-      >
-        新增待办
-      </v-btn>
+      <!-- 搜索无结果状态 -->
+      <template v-if="searchQuery">
+        <v-icon
+          size="64"
+          color="grey-lighten-2"
+          >mdi-magnify</v-icon
+        >
+        <h3 class="text-h6 mt-4 text-medium-emphasis">未找到搜索结果</h3>
+        <p class="text-body-2 text-medium-emphasis mb-4">
+          没有找到包含"<span class="font-weight-bold">{{ searchQuery }}</span>"的待办事项
+        </p>
+        <v-btn
+          color="primary"
+          variant="outlined"
+          prepend-icon="mdi-refresh"
+          @click="clearSearch"
+        >
+          清除搜索
+        </v-btn>
+      </template>
+      
+      <!-- 普通空列表状态 -->
+      <template v-else>
+        <v-icon
+          size="64"
+          color="grey-lighten-2"
+          >mdi-clipboard-check</v-icon
+        >
+        <h3 class="text-h6 mt-4 text-medium-emphasis">还没有待办事项</h3>
+        <p class="text-body-2 text-medium-emphasis mb-4">点击"新增待办"创建第一个待办事项</p>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="$emit('create-todo')"
+        >
+          新增待办
+        </v-btn>
+      </template>
     </v-container>
 
     <!-- Todo列表 -->
@@ -74,6 +98,7 @@
           :columns="tableColumns"
           :categories="categories"
           :viewAllMode="viewAllMode || selectedCategory?.isFilterCategory"
+          :searchQuery="searchQuery"
           @edit="$emit('edit-todo', $event)"
           @status-change="$emit('status-change', $event)"
           @copy="$emit('copy', $event)"
@@ -118,6 +143,10 @@ const props = defineProps({
     type: String,
     default: 'asc',
   },
+  searchQuery: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits([
@@ -127,6 +156,7 @@ const emit = defineEmits([
   'archive',
   'create-todo',
   'sort-toggle',
+  'clear-search',
 ])
 
 // 计算排序后的待办事项
@@ -153,6 +183,11 @@ const sortedTodos = computed(() => {
 
   return sorted
 })
+
+// 清除搜索
+const clearSearch = () => {
+  emit('clear-search')
+}
 </script>
 
 <style lang="scss" scoped>

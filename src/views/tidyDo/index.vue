@@ -23,10 +23,12 @@
           :current-todos-count="currentTodos.length"
           :show-archived="todosStore.showArchived"
           :todos-loading="todosStore.isLoading"
+          :search-value="searchQuery"
           @create-todo="handleCreateTodo"
           @toggle-archived="todosStore.toggleShowArchived"
           @refresh="todosStore.loadTodos"
           @exit-view-all="handleExitViewAll"
+          @search="handleSearch"
         />
 
         <!-- Todo列表内容 -->
@@ -38,12 +40,14 @@
           :categories="categoriesStore.categories"
           :sort-by="appStore.sortBy"
           :sort-order="appStore.sortOrder"
+          :search-query="searchQuery"
           @edit-todo="handleEditTodo"
           @status-change="handleStatusChange"
           @copy="handleCopy"
           @archive="handleArchive"
           @create-todo="handleCreateTodo"
           @sort-toggle="appStore.toggleSort"
+          @clear-search="handleClearSearch"
         />
       </v-container>
     </v-main>
@@ -97,6 +101,9 @@ const todoEditDialog = useDialog()
 // 响应式数据
 const sidebarRef = ref(null)
 
+// 搜索相关状态
+const searchQuery = ref('')
+
 // 计算属性 - 从stores中计算得出
 const selectedCategory = computed(() => {
   if (!appStore.selectedCategoryId) return null
@@ -104,17 +111,17 @@ const selectedCategory = computed(() => {
 })
 
 const currentTodos = computed(() => {
+  let filteredTodos = []
+  
   if (appStore.viewAllMode) {
     // 查看全部模式：返回所有待办事项（根据 showArchived 状态过滤）
-    return todosStore.showArchived ? todosStore.todos : todosStore.activeTodos
-  }
-
-  if (!appStore.selectedCategoryId) return []
-
-  // 如果是筛选类，应用筛选条件
-  if (selectedCategory.value?.isFilterCategory) {
+    filteredTodos = todosStore.showArchived ? todosStore.todos : todosStore.activeTodos
+  } else if (!appStore.selectedCategoryId) {
+    filteredTodos = []
+  } else if (selectedCategory.value?.isFilterCategory) {
+    // 如果是筛选类，应用筛选条件
     const filterConditions = selectedCategory.value.filterConditions || {}
-    return todosStore.todos.filter((todo) => {
+    filteredTodos = todosStore.todos.filter((todo) => {
       // 归档状态过滤
       if (!todosStore.showArchived && todo.archived) return false
 
@@ -146,10 +153,22 @@ const currentTodos = computed(() => {
 
       return true
     })
+  } else {
+    // 普通分类：返回该分类下的待办事项
+    filteredTodos = todosStore.getTodosByCategoryId(appStore.selectedCategoryId)
   }
 
-  // 普通分类：返回该分类下的待办事项
-  return todosStore.getTodosByCategoryId(appStore.selectedCategoryId)
+  // 应用搜索过滤
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filteredTodos = filteredTodos.filter(todo => 
+      todo.title?.toLowerCase().includes(query) ||
+      todo.description?.toLowerCase().includes(query) ||
+      todo.tags?.some(tag => tag.toLowerCase().includes(query))
+    )
+  }
+
+  return filteredTodos
 })
 
 // 扩展的表格列配置
@@ -257,9 +276,21 @@ const handleArchive = async (item) => {
   }
 }
 
+// 处理搜索事件
+const handleSearch = (query) => {
+  searchQuery.value = query
+}
+
+// 处理清除搜索
+const handleClearSearch = () => {
+  searchQuery.value = ''
+}
+
 // 处理退出查看全部模式
 const handleExitViewAll = () => {
   appStore.exitViewAllMode()
+  // 清空搜索
+  searchQuery.value = ''
   // 选择第一个分类
   if (categoriesStore.categories.length > 0) {
     appStore.selectCategory(categoriesStore.categories[0])
