@@ -133,6 +133,12 @@ export const useCategoriesStore = defineStore('categories', () => {
     }
   }
 
+  // 重置状态
+  const resetState = () => {
+    categories.value = []
+    isLoading.value = false
+  }
+
   return {
     // 状态
     categories: allCategories,
@@ -150,5 +156,6 @@ export const useCategoriesStore = defineStore('categories', () => {
     updateCategory,
     deleteCategory,
     moveCategoryOrder,
+    resetState,
   }
 })

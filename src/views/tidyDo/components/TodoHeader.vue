@@ -87,19 +87,36 @@
       />
     </v-btn-group>
   </v-toolbar>
+
+  <!-- 编辑弹窗 -->
+  <TodoEditDialog
+    :model-value="todoEditDialog.visible.value"
+    @update:model-value="todoEditDialog.visible.value = $event"
+    :item="todoEditDialog.data.value"
+    :category-id="appStore.selectedCategoryId"
+    :categories="categoriesStore.categories"
+    @save="handleSaveTodo"
+    @delete="handleDeleteTodo"
+  />
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'
+import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useDialog } from '@/composables/useDialog'
+import { useNotification } from '@/composables/useNotification'
+import TodoEditDialog from '@/model/TodoEditDialog.vue'
 
 // 使用store
 const appStore = useAppStore()
 const todosStore = useTodosStore()
+const categoriesStore = useCategoriesStore()
 
-// 只需要保留create-todo事件，其他都可以直接调用store方法
-const emit = defineEmits(['create-todo'])
+// 通知和弹窗管理
+const { showSuccess, showError } = useNotification()
+const todoEditDialog = useDialog()
 
 // 计算按钮禁用状态
 const isCreateButtonDisabled = computed(() => {
@@ -111,8 +128,43 @@ const isCreateButtonDisabled = computed(() => {
 // 处理创建待办点击
 const handleCreateTodoClick = () => {
   if (!isCreateButtonDisabled.value) {
-    emit('create-todo')
-  } 
+    if (appStore.viewAllMode) {
+      // 在查看全部模式下，创建时需要用户选择分类
+      const defaultCategoryId = categoriesStore.categories.length > 0 ? categoriesStore.categories[0].id : null
+      todoEditDialog.show({ categoryId: defaultCategoryId })
+    } else {
+      todoEditDialog.show(null)
+    }
+  }
+}
+
+// 处理保存待办
+const handleSaveTodo = async (todoData) => {
+  try {
+    if (todoEditDialog.data.value) {
+      // 编辑模式
+      await todosStore.updateTodo(todoData)
+      showSuccess('更新待办成功')
+    } else {
+      // 创建模式
+      await todosStore.createTodo(todoData)
+      showSuccess('创建待办成功')
+    }
+    todoEditDialog.hide()
+  } catch (error) {
+    showError('保存待办失败')
+  }
+}
+
+// 处理删除待办
+const handleDeleteTodo = async (item) => {
+  try {
+    await todosStore.deleteTodo(item.id)
+    todoEditDialog.hide()
+    showSuccess('删除待办成功')
+  } catch (error) {
+    showError('删除待办失败')
+  }
 }
 </script>
 

@@ -174,6 +174,15 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 重置应用状态
+  const resetState = () => {
+    selectedCategoryId.value = null
+    viewAllMode.value = false
+    sortBy.value = 'endDate'
+    sortOrder.value = 'asc'
+    searchQuery.value = ''
+  }
+
   // 搜索功能
   const setSearchQuery = (query) => {
     searchQuery.value = query
@@ -203,6 +212,7 @@ export const useAppStore = defineStore('app', () => {
     exitViewAllMode,
     toggleSort,
     initializeSelection,
+    resetState,
     setSearchQuery,
     clearSearch,
   }

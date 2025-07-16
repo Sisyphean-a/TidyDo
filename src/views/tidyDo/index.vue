@@ -17,10 +17,10 @@
         class="pa-0 h-100"
       >
         <!-- 头部工具栏 -->
-        <TodoHeader @create-todo="handleCreateTodo" />
+        <TodoHeader />
 
         <!-- Todo列表内容 -->
-        <TodoContent ref="todoContentRef" @create-todo="handleCreateTodo" />
+        <TodoContent ref="todoContentRef" />
       </v-container>
     </v-main>
   </v-app>
@@ -31,7 +31,7 @@ import { ref, onMounted } from 'vue'
 import TodoSidebar from '@/components/TodoSidebar.vue'
 import TodoHeader from './components/TodoHeader.vue'
 import TodoContent from './components/TodoContent.vue'
-import { initializeDefaultData } from '@/services/todoService'
+import { useAppLifecycle } from '@/services/appService'
 
 // 使用Pinia stores
 import { useTodosStore } from '@/stores/useTodosStore'
@@ -47,29 +47,16 @@ const appStore = useAppStore()
 const sidebarRef = ref(null)
 const todoContentRef = ref(null)
 
-// 数据加载
-const loadData = async () => {
-  try {
-    await Promise.all([categoriesStore.loadCategories(), todosStore.loadTodos()])
-    // 初始化选择状态
-    appStore.initializeSelection(categoriesStore.categories)
-  } catch (error) {
-    console.error('加载数据失败:', error)
-  }
-}
-
-// 处理创建待办
-const handleCreateTodo = () => {
-  // 调用TodoContent组件的handleCreateTodo方法
-  if (todoContentRef.value) {
-    todoContentRef.value.handleCreateTodo()
-  }
-}
+// 使用应用生命周期钩子
+const { getStatus } = useAppLifecycle()
 
 // 组件挂载
 onMounted(async () => {
-  await initializeDefaultData()
-  await loadData()
+  // 等待应用初始化完成
+  const status = getStatus()
+  if (!status.isInitialized && !status.isInitializing) {
+    console.warn('应用尚未初始化完成，请检查入口文件的初始化流程')
+  }
 })
 </script>
 

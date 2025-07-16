@@ -355,14 +355,17 @@ defineExpose({
   categories,
 })
 
-// 组件挂载时加载数据
+// 组件挂载时确保分类数据已加载
 onMounted(async () => {
-  try {
-    await categoriesStore.loadCategories()
-    // 通知父组件分类数据已更新
+  // 如果还没有分类数据，等待一下让应用初始化完成
+  if (categories.value.length === 0) {
+    setTimeout(() => {
+      // 通知父组件分类数据已更新
+      emit('category-updated', categories.value)
+    }, 100)
+  } else {
+    // 立即通知父组件分类数据已更新
     emit('category-updated', categories.value)
-  } catch (error) {
-    showMessage('初始化分类数据失败', 'error')
   }
 })
 </script>

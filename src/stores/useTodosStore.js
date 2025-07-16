@@ -136,6 +136,13 @@ export const useTodosStore = defineStore('todos', () => {
     showArchived.value = !showArchived.value
   }
 
+  // 重置状态
+  const resetState = () => {
+    todos.value = []
+    isLoading.value = false
+    showArchived.value = false
+  }
+
   return {
     // 状态
     todos: allTodos,
@@ -157,5 +164,6 @@ export const useTodosStore = defineStore('todos', () => {
     updateTodoStatus,
     toggleTodoArchived,
     toggleShowArchived,
+    resetState,
   }
 })

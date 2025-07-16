@@ -250,10 +250,7 @@ const handleArchive = async (item) => {
   }
 }
 
-// 继续发出create-todo事件给父组件，保持向上兼容
-const emit = defineEmits(['create-todo'])
-
-// 暴露方法给父组件
+// 暴露方法给父组件（保持向上兼容）
 defineExpose({
   handleCreateTodo
 })

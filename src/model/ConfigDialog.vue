@@ -642,7 +642,11 @@ const handleImportData = async () => {
 
     // 清除选择的文件
     selectedFile.value = null
-    window.location.reload()
+    
+    // 使用应用服务重新加载数据，而不是刷新整个页面
+    import('@/services/appService').then(({ AppService }) => {
+      AppService.reloadAppData()
+    })
   } catch (error) {
     console.error('导入失败：', error)
     alert(`导入失败：${error.message}`)
