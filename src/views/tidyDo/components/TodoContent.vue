@@ -2,7 +2,7 @@
   <div class="todo-content">
     <!-- 未选择分类状态 -->
     <v-container
-      v-if="!selectedCategory && !viewAllMode"
+      v-if="!appStore.selectedCategory && !appStore.viewAllMode"
       class="text-center pa-12"
     >
       <v-icon
@@ -16,11 +16,11 @@
 
     <!-- 空列表状态 -->
     <v-container
-      v-else-if="currentTodos.length === 0"
+      v-else-if="appStore.currentTodos.length === 0"
       class="text-center pa-12"
     >
       <!-- 搜索无结果状态 -->
-      <template v-if="searchQuery">
+      <template v-if="appStore.searchQuery">
         <v-icon
           size="64"
           color="grey-lighten-2"
@@ -28,18 +28,19 @@
         >
         <h3 class="text-h6 mt-4 text-medium-emphasis">未找到搜索结果</h3>
         <p class="text-body-2 text-medium-emphasis mb-4">
-          没有找到包含"<span class="font-weight-bold">{{ searchQuery }}</span>"的待办事项
+          没有找到包含"<span class="font-weight-bold">{{ appStore.searchQuery }}</span
+          >"的待办事项
         </p>
         <v-btn
           color="primary"
           variant="outlined"
           prepend-icon="mdi-refresh"
-          @click="clearSearch"
+          @click="appStore.clearSearch"
         >
           清除搜索
         </v-btn>
       </template>
-      
+
       <!-- 普通空列表状态 -->
       <template v-else>
         <v-icon
@@ -52,7 +53,7 @@
         <v-btn
           color="primary"
           prepend-icon="mdi-plus"
-          @click="$emit('create-todo')"
+          @click="handleCreateTodo"
         >
           新增待办
         </v-btn>
@@ -66,7 +67,7 @@
     >
       <!-- 表头 -->
       <TableRow
-        :columns="tableColumns"
+        :columns="appStore.tableColumns"
         :isHeader="true"
       >
         <!-- 截止日期列自定义表头（包含排序功能） -->
@@ -75,15 +76,15 @@
             variant="text"
             density="compact"
             class="text-body-2 font-weight-bold"
-            @click="$emit('sort-toggle', 'endDate')"
+            @click="appStore.toggleSort('endDate')"
           >
             截止日期
             <v-icon
-              v-if="sortBy === 'endDate'"
+              v-if="appStore.sortBy === 'endDate'"
               size="small"
               class="ms-1"
             >
-              {{ sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+              {{ appStore.sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
             </v-icon>
           </v-btn>
         </template>
@@ -95,17 +96,37 @@
           v-for="item in sortedTodos"
           :key="item.id"
           :itemData="item"
-          :columns="tableColumns"
-          :categories="categories"
-          :viewAllMode="viewAllMode || selectedCategory?.isFilterCategory"
-          :searchQuery="searchQuery"
-          @edit="$emit('edit-todo', $event)"
-          @status-change="$emit('status-change', $event)"
-          @copy="$emit('copy', $event)"
-          @archive="$emit('archive', $event)"
+          :columns="appStore.tableColumns"
+          :categories="categoriesStore.categories"
+          :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
+          :searchQuery="appStore.searchQuery"
+          @edit="handleEditTodo"
+          @status-change="handleStatusChange"
+          @copy="handleCopy"
+          @archive="handleArchive"
         />
       </div>
     </div>
+
+    <!-- 编辑弹窗 -->
+    <TodoEditDialog
+      v-model="todoEditDialog.visible.value"
+      :item="todoEditDialog.data.value"
+      :category-id="appStore.selectedCategoryId"
+      :categories="categoriesStore.categories"
+      @save="handleSaveTodo"
+      @delete="handleDeleteTodo"
+    />
+
+    <!-- 通知 -->
+    <v-snackbar
+      v-model="notification.visible"
+      :color="notification.color"
+      :timeout="notification.timeout"
+      location="top"
+    >
+      {{ notification.message }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -113,90 +134,146 @@
 import { computed } from 'vue'
 import TodoItem from './TodoItem.vue'
 import TableRow from './TableRow.vue'
+import TodoEditDialog from '@/model/TodoEditDialog.vue'
+import { useAppStore } from '@/stores/useAppStore'
+import { useTodosStore } from '@/stores/useTodosStore'
+import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useNotification } from '@/composables/useNotification'
+import { useDialog } from '@/composables/useDialog'
 
-const props = defineProps({
-  selectedCategory: {
-    type: Object,
-    default: null,
-  },
-  viewAllMode: {
-    type: Boolean,
-    default: false,
-  },
-  currentTodos: {
-    type: Array,
-    default: () => [],
-  },
-  tableColumns: {
-    type: Array,
-    default: () => [],
-  },
-  categories: {
-    type: Array,
-    default: () => [],
-  },
-  sortBy: {
-    type: String,
-    default: 'endDate',
-  },
-  sortOrder: {
-    type: String,
-    default: 'asc',
-  },
-  searchQuery: {
-    type: String,
-    default: '',
-  },
-})
+// 使用stores
+const appStore = useAppStore()
+const todosStore = useTodosStore()
+const categoriesStore = useCategoriesStore()
 
-const emit = defineEmits([
-  'edit-todo',
-  'status-change',
-  'copy',
-  'archive',
-  'create-todo',
-  'sort-toggle',
-  'clear-search',
-])
+// 通知和弹窗管理
+const { notification, showSuccess, showError } = useNotification()
+const todoEditDialog = useDialog()
 
 // 计算排序后的待办事项
 const sortedTodos = computed(() => {
-  const sorted = [...props.currentTodos].sort((a, b) => {
-    if (props.sortBy === 'endDate') {
+  const sorted = [...appStore.currentTodos].sort((a, b) => {
+    if (appStore.sortBy === 'endDate') {
       // 优先显示有截止日期的事项
       if (!a.endDate && !b.endDate) return 0
       if (!a.endDate) return 1
       if (!b.endDate) return -1
 
-      // 按截止日期排序
       const dateA = new Date(a.endDate)
       const dateB = new Date(b.endDate)
 
-      if (props.sortOrder === 'asc') {
-        return dateA - dateB
-      } else {
-        return dateB - dateA
-      }
+      return appStore.sortOrder === 'asc' ? dateA - dateB : dateB - dateA
     }
-    return 0
+
+    // 默认按创建时间排序
+    const timeA = new Date(a.createdAt || 0)
+    const timeB = new Date(b.createdAt || 0)
+
+    return appStore.sortOrder === 'asc' ? timeA - timeB : timeB - timeA
   })
 
   return sorted
 })
 
-// 清除搜索
-const clearSearch = () => {
-  emit('clear-search')
+// Todo相关操作
+const handleCreateTodo = () => {
+  if (appStore.viewAllMode) {
+    // 在查看全部模式下，创建时需要用户选择分类
+    // 默认选择第一个分类
+    const defaultCategoryId =
+      categoriesStore.categories.length > 0 ? categoriesStore.categories[0].id : null
+    todoEditDialog.show({ categoryId: defaultCategoryId })
+  } else {
+    todoEditDialog.show(null)
+  }
+}
+
+const handleEditTodo = (item) => {
+  todoEditDialog.show(item)
+}
+
+// 处理状态变更
+const handleStatusChange = async ({ item, newStatus }) => {
+  try {
+    await todosStore.updateTodoStatus(item, newStatus)
+    showSuccess('状态更新成功')
+  } catch (error) {
+    showError('状态更新失败')
+  }
+}
+
+const handleSaveTodo = async (todoData) => {
+  try {
+    if (todoEditDialog.data.value) {
+      // 编辑模式
+      await todosStore.updateTodo(todoData)
+      showSuccess('更新待办成功')
+    } else {
+      // 创建模式
+      await todosStore.createTodo(todoData)
+      showSuccess('创建待办成功')
+    }
+
+    todoEditDialog.hide()
+  } catch (error) {
+    showError('保存待办失败')
+  }
+}
+
+const handleDeleteTodo = async (item) => {
+  try {
+    await todosStore.deleteTodo(item.id)
+    todoEditDialog.hide()
+    showSuccess('删除待办成功')
+  } catch (error) {
+    showError('删除待办失败')
+  }
+}
+
+// 处理复制事件
+const handleCopy = ({ text, type }) => {
+  if (type === 'error') {
+    showError(text)
+  } else {
+    showSuccess(`复制成功：${text}`)
+  }
+}
+
+// 处理归档事件
+const handleArchive = async (item) => {
+  try {
+    await todosStore.toggleTodoArchived(item)
+    showSuccess(item.archived ? '取消归档成功' : '归档成功')
+  } catch (error) {
+    showError('归档操作失败')
+  }
+}
+
+// 继续发出create-todo事件给父组件，保持向上兼容
+const emit = defineEmits(['create-todo'])
+
+// 当内部处理创建时，也发出事件
+const handleCreateTodoInternal = () => {
+  handleCreateTodo()
+  emit('create-todo')
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .todo-content {
-  height: calc(100vh - 64px);
+  height: calc(100vh - 65px);
   overflow-y: auto;
 }
 
 .todo-list {
   height: 100%;
+}
+
+.table-row {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table-row:hover {
+  background-color: #f8f9fa;
 }
 </style>
