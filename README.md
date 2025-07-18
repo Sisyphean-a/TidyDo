@@ -31,34 +31,59 @@ TidyDo 是一个基于 Vue 3 + Vuetify 构建的待办事项管理应用，具�
 
 ## 🏗️ 系统架构
 
-### 初始化流程时序图
+### 系统架构与初始化流程
 
 ```mermaid
 graph TD
     A[应用入口文件<br/>main.js/extension.js/popup.js] --> B[AppService<br/>统一初始化服务]
-    B --> C[配置初始化<br/>ConfigService]
-    B --> D[数据初始化<br/>TodoService]
-    B --> E[Store初始化<br/>并行加载]
     
-    E --> F[CategoriesStore<br/>分类管理]
-    E --> G[TodosStore<br/>待办管理]
-    E --> H[AppStore<br/>应用状态]
+    B --> C[步骤1: 配置服务初始化<br/>ConfigService.initializeConfig]
+    C --> C1[IndexedDB读取配置<br/>默认配置合并]
     
-    F --> I[TodoSidebar<br/>侧边栏组件]
-    G --> J[TodoContent<br/>内容组件]
-    H --> K[TodoHeader<br/>头部组件]
+    B --> D[步骤2: 全局配置状态初始化<br/>globalConfig.initializeConfig]
+    D --> D1[useConfig全局状态<br/>响应式配置缓存]
+    D1 --> D2[状态配置缓存<br/>优先级配置缓存]
     
-    I --> L[主界面<br/>index.vue]
-    J --> L
-    K --> L
+    B --> E[步骤3: 默认数据初始化<br/>TodoService.initializeDefaultData]
+    E --> E1[创建默认分类<br/>数据结构验证]
     
-    M[ConfigDialog<br/>配置对话框] --> N[重新加载数据<br/>AppService.reloadAppData]
-    N --> E
+    B --> F[步骤4: Store并行初始化<br/>AppService.initializeStores]
+    F --> F1[CategoriesStore<br/>分类数据加载]
+    F --> F2[TodosStore<br/>待办数据加载]
+    F --> F3[AppStore<br/>应用状态初始化]
+    
+    F1 --> G1[TodoSidebar<br/>侧边栏组件]
+    F2 --> G2[TodoContent<br/>内容区域]
+    F3 --> G3[TodoHeader<br/>头部工具栏]
+    
+    G2 --> G2A[表格视图<br/>TodoItem组件]
+    G2 --> G2B[时间线视图<br/>TodoTimeline组件]
+    
+    %% 配置共享机制
+    D2 -.-> G2A
+    D2 -.-> G2B
+    D2 -.-> H1[TodoEditDialog<br/>编辑弹窗]
+    
+    G1 --> I[主界面<br/>index.vue]
+    G2 --> I
+    G3 --> I
+    
+    %% 配置更新流程
+    J[ConfigDialog<br/>配置管理] --> K[重新加载配置<br/>AppService.reloadAppData]
+    K --> L[清除配置缓存<br/>globalConfig.clearCache]
+    L --> D
+    
+    %% 组件配置获取
+    G2A --> M[getStatusText<br/>getStatusColor]
+    G2B --> M
+    H1 --> M
+    M --> D2
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
-    style L fill:#e8f5e8
-    style N fill:#fff3e0
+    style D1 fill:#fff3e0
+    style I fill:#e8f5e8
+    style K fill:#ffebee
 ```
 
 ### 架构特点
