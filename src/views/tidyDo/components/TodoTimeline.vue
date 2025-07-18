@@ -87,23 +87,43 @@
       <v-timeline-item
         v-for="group in timelineGroups"
         :key="group.date"
-        dot-color="primary"
+        :dot-color="group.isSpecial ? 'grey-lighten-1' : 'primary'"
         size="small"
         class="timeline-item"
+        :class="{ 'timeline-item-special': group.isSpecial }"
       >
         <template v-slot:icon>
           <v-icon
-            color="primary"
+            :color="group.isSpecial ? 'grey-lighten-1' : 'primary'"
             size="small"
           >
-            mdi-calendar
+            {{ group.isSpecial ? 'mdi-calendar-question' : 'mdi-calendar' }}
           </v-icon>
         </template>
 
         <template v-slot:opposite>
           <div class="timeline-date">
-            <div class="text-body-1 font-weight-medium">
+            <div
+              class="text-body-1 font-weight-medium"
+              :class="{ 'text-medium-emphasis': group.isSpecial }"
+            >
               {{ group.date }}
+              <v-tooltip
+                v-if="group.isSpecial"
+                :text="getSpecialGroupTooltip(sortMode)"
+                location="top"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-icon
+                    v-bind="props"
+                    size="small"
+                    class="ms-1"
+                    color="grey-lighten-1"
+                  >
+                    mdi-information-outline
+                  </v-icon>
+                </template>
+              </v-tooltip>
             </div>
             <div class="text-caption text-medium-emphasis">{{ group.items.length }} 项待办</div>
           </div>
@@ -111,7 +131,10 @@
 
         <v-card
           elevation="1"
-          class="timeline-group-card"
+          :class="[
+            'timeline-group-card',
+            { 'timeline-group-card-special': group.isSpecial }
+          ]"
         >
           <v-card-text class="pa-3">
             <div
@@ -219,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useConfig } from '@/composables/useConfig'
 
@@ -259,45 +282,58 @@ const sortOrder = ref('desc')
 const timelineGroups = computed(() => {
   if (!props.todos || props.todos.length === 0) return []
 
-  // 先按时间排序
-  const sorted = [...props.todos].sort((a, b) => {
-    let dateA, dateB
+  // 根据排序模式分离有效数据和无效数据
+  const { validItems, invalidItems } = separateItemsByMode(props.todos, sortMode.value)
 
-    switch (sortMode.value) {
-      case 'endDate':
-        dateA = a.endDate ? new Date(a.endDate) : new Date(0)
-        dateB = b.endDate ? new Date(b.endDate) : new Date(0)
-        break
-      case 'updatedAt':
-        dateA = new Date(a.updatedAt || a.createdAt)
-        dateB = new Date(b.updatedAt || b.createdAt)
-        break
-      case 'createdAt':
-      default:
-        dateA = new Date(a.createdAt)
-        dateB = new Date(b.createdAt)
-        break
-    }
-
+  // 对有效数据进行排序
+  const sortedValid = validItems.sort((a, b) => {
+    const dateA = getItemDate(a, sortMode.value)
+    const dateB = getItemDate(b, sortMode.value)
     return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
   })
 
-  // 按日期分组
-  const groups = {}
-  sorted.forEach((item) => {
+  // 对无效数据按创建时间排序（作为备用排序）
+  const sortedInvalid = invalidItems.sort((a, b) => {
+    const dateA = new Date(a.createdAt)
+    const dateB = new Date(b.createdAt)
+    return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
+  })
+
+  // 按日期分组有效数据
+  const validGroups = {}
+  sortedValid.forEach((item) => {
     const date = getItemDate(item, sortMode.value)
     const dateKey = formatDateKey(date)
 
-    if (!groups[dateKey]) {
-      groups[dateKey] = {
+    if (!validGroups[dateKey]) {
+      validGroups[dateKey] = {
         date: dateKey,
         items: [],
+        isSpecial: false,
       }
     }
-    groups[dateKey].items.push(item)
+    validGroups[dateKey].items.push(item)
   })
 
-  return Object.values(groups)
+  // 创建特殊分组用于无效数据
+  const result = Object.values(validGroups)
+
+  if (sortedInvalid.length > 0) {
+    const specialGroup = {
+      date: getSpecialGroupLabel(sortMode.value),
+      items: sortedInvalid,
+      isSpecial: true,
+    }
+
+    // 根据排序顺序决定特殊分组的位置
+    if (sortOrder.value === 'asc') {
+      result.push(specialGroup) // 升序时放在最后
+    } else {
+      result.unshift(specialGroup) // 降序时放在最前
+    }
+  }
+
+  return result
 })
 
 // 方法
@@ -305,10 +341,40 @@ const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
+// 根据排序模式分离有效和无效数据
+const separateItemsByMode = (items, mode) => {
+  const validItems = []
+  const invalidItems = []
+
+  items.forEach((item) => {
+    if (isValidForMode(item, mode)) {
+      validItems.push(item)
+    } else {
+      invalidItems.push(item)
+    }
+  })
+
+  return { validItems, invalidItems }
+}
+
+// 检查项目是否对当前排序模式有效
+const isValidForMode = (item, mode) => {
+  switch (mode) {
+    case 'endDate':
+      return item.endDate != null
+    case 'updatedAt':
+      return item.updatedAt != null
+    case 'createdAt':
+    default:
+      return item.createdAt != null // 创建时间应该总是存在
+  }
+}
+
+// 获取项目的有效日期（仅用于有效数据）
 const getItemDate = (item, mode) => {
   switch (mode) {
     case 'endDate':
-      return item.endDate ? new Date(item.endDate) : new Date(item.createdAt)
+      return new Date(item.endDate)
     case 'updatedAt':
       return new Date(item.updatedAt || item.createdAt)
     case 'createdAt':
@@ -317,12 +383,50 @@ const getItemDate = (item, mode) => {
   }
 }
 
+// 获取特殊分组的标签
+const getSpecialGroupLabel = (mode) => {
+  switch (mode) {
+    case 'endDate':
+      return '未设置截止时间'
+    case 'updatedAt':
+      return '未更新'
+    case 'createdAt':
+    default:
+      return '其他'
+  }
+}
+
+// 获取特殊分组的工具提示
+const getSpecialGroupTooltip = (mode) => {
+  switch (mode) {
+    case 'endDate':
+      return '这些待办事项没有设置截止时间，按创建时间排序'
+    case 'updatedAt':
+      return '这些待办事项没有更新记录，按创建时间排序'
+    case 'createdAt':
+    default:
+      return '其他待办事项'
+  }
+}
+
+// 日期格式化缓存
+const dateFormatCache = new Map()
+
 const formatDateKey = (date) => {
-  return date.toLocaleDateString('zh-CN', {
+  const timestamp = date.getTime()
+
+  if (dateFormatCache.has(timestamp)) {
+    return dateFormatCache.get(timestamp)
+  }
+
+  const formatted = date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
+
+  dateFormatCache.set(timestamp, formatted)
+  return formatted
 }
 
 // 状态和优先级相关方法已从 useConfig 中导入
@@ -345,7 +449,20 @@ watch(sortMode, (newMode) => {
 })
 
 // 组件初始化
-onMounted(async () => {})
+onMounted(async () => {
+  // 定期清理日期格式化缓存，避免内存泄漏
+  const cleanupInterval = setInterval(() => {
+    if (dateFormatCache.size > 100) {
+      dateFormatCache.clear()
+    }
+  }, 60000) // 每分钟检查一次
+
+  // 组件卸载时清理
+  onUnmounted(() => {
+    clearInterval(cleanupInterval)
+    dateFormatCache.clear()
+  })
+})
 </script>
 
 <style scoped>
@@ -375,6 +492,15 @@ onMounted(async () => {})
 
 .timeline-group-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.timeline-group-card-special {
+  border-left-color: rgb(var(--v-theme-grey-lighten-1));
+  background-color: rgba(var(--v-theme-grey-lighten-4), 0.3);
+}
+
+.timeline-item-special {
+  opacity: 0.8;
 }
 
 .timeline-item-row {
