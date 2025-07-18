@@ -235,7 +235,8 @@ const emit = defineEmits([
 const { 
   getStatusColor, 
   getStatusText, 
-  getPriorityIcon 
+  getPriorityIcon,
+  statusConfig
 } = useConfig()
 
 // 计算截止日期是否过期

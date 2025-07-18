@@ -57,9 +57,9 @@ export class AppService {
       await this.initializeStores()
 
       this.isInitialized = true
-      console.log('应用初始化完成')
+      console.log('✅ [AppService] 应用初始化完成')
     } catch (error) {
-      console.error('应用初始化失败:', error)
+      console.error('❌ [AppService] 应用初始化失败:', error)
       throw error
     } finally {
       this.isInitializing = false

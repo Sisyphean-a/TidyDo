@@ -24,12 +24,34 @@ const CONFIG_TO_DB_MAP = {
   cancelled: 'cancelled',
 }
 
+// 全局响应式状态
+let globalStatusConfig = null
+let globalPriorityConfig = null
+let globalFieldConfig = null
+let globalSystemConfig = null
+let globalIsLoading = null
+
 export const useConfig = () => {
-  const statusConfig = ref({})
-  const priorityConfig = ref({})
-  const fieldConfig = ref({})
-  const systemConfig = ref({})
-  const isLoading = ref(false)
+  // 使用全局状态，确保所有实例共享同一份配置
+  if (!globalStatusConfig) {
+    globalStatusConfig = ref({})
+    globalPriorityConfig = ref({})
+    globalFieldConfig = ref({})
+    globalSystemConfig = ref({})
+    globalIsLoading = ref(false)
+    
+    // 如果有缓存，立即恢复
+    if (statusConfigCache) {
+      globalStatusConfig.value = statusConfigCache
+      globalPriorityConfig.value = priorityConfigCache
+    }
+  }
+  
+  const statusConfig = globalStatusConfig
+  const priorityConfig = globalPriorityConfig
+  const fieldConfig = globalFieldConfig
+  const systemConfig = globalSystemConfig
+  const isLoading = globalIsLoading
 
   // 初始化配置
   const initializeConfig = async () => {
@@ -59,8 +81,18 @@ export const useConfig = () => {
       statusConfigCache = status
       priorityConfigCache = priority
       configCache = true
+      
+      // 确保全局状态也更新
+      if (globalStatusConfig && globalStatusConfig !== statusConfig) {
+        globalStatusConfig.value = status
+        globalPriorityConfig.value = priority
+        globalFieldConfig.value = field
+        globalSystemConfig.value = system
+      }
+      
+      console.log('✅ [useConfig] 配置初始化完成')
     } catch (error) {
-      console.error('Failed to initialize config:', error)
+      console.error('❌ [useConfig] 配置初始化失败:', error)
     } finally {
       isLoading.value = false
     }
@@ -77,6 +109,12 @@ export const useConfig = () => {
     const mappedKey = STATUS_FIELD_MAP[statusKey]
     if (mappedKey && statusConfig.value[mappedKey]) {
       return statusConfig.value[mappedKey]
+    }
+
+    // 如果还没有配置，尝试异步初始化（但不等待结果）
+    if (!configCache) {
+      console.warn('⚠️ [useConfig] 配置未初始化，尝试异步初始化配置...')
+      initializeConfig()
     }
 
     // 默认返回
@@ -113,6 +151,11 @@ export const useConfig = () => {
 
   // 获取优先级配置
   const getPriorityConfig = (priority) => {
+    // 如果还没有配置，尝试异步初始化（但不等待结果）
+    if (!configCache) {
+      initializeConfig()
+    }
+
     return (
       priorityConfig.value[priority] || {
         text: '普通',
@@ -160,6 +203,14 @@ export const useConfig = () => {
     configCache = null
     statusConfigCache = null
     priorityConfigCache = null
+    
+    // 重置全局状态
+    if (globalStatusConfig) {
+      globalStatusConfig.value = {}
+      globalPriorityConfig.value = {}
+      globalFieldConfig.value = {}
+      globalSystemConfig.value = {}
+    }
   }
 
   return {
@@ -194,3 +245,11 @@ export const useConfig = () => {
 
 // 创建全局实例
 export const globalConfig = useConfig()
+
+// 在模块加载时尝试初始化配置
+if (typeof window !== 'undefined') {
+  // 确保在浏览器环境中执行
+  globalConfig.initializeConfig().catch(error => {
+    console.warn('全局配置初始化失败:', error)
+  })
+}
