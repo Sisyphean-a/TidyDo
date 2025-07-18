@@ -3,6 +3,7 @@ import { initializeDefaultData } from './todoService'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 import { useAppStore } from '@/stores/useAppStore'
+import { globalConfig } from '@/composables/useConfig'
 
 /**
  * 应用初始化服务
@@ -46,10 +47,13 @@ export class AppService {
       // 1. 初始化配置
       await initializeConfig()
 
-      // 2. 初始化默认数据
+      // 2. 初始化全局配置 composable
+      await globalConfig.initializeConfig()
+
+      // 3. 初始化默认数据
       await initializeDefaultData()
 
-      // 3. 初始化 stores 数据
+      // 4. 初始化 stores 数据
       await this.initializeStores()
 
       this.isInitialized = true
@@ -90,6 +94,10 @@ export class AppService {
     const todosStore = useTodosStore()
     const appStore = useAppStore()
 
+    // 清除配置缓存并重新加载
+    globalConfig.clearCache()
+    await globalConfig.initializeConfig()
+
     // 重新加载数据
     await Promise.all([
       categoriesStore.loadCategories(),
@@ -108,6 +116,9 @@ export class AppService {
     const categoriesStore = useCategoriesStore()
     const todosStore = useTodosStore()
     const appStore = useAppStore()
+
+    // 清除配置缓存
+    globalConfig.clearCache()
 
     // 重置所有store的状态
     categoriesStore.resetState()

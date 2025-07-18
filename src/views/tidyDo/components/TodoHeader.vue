@@ -75,6 +75,13 @@
         新增待办
       </v-btn>
       <v-btn
+        @click="appStore.toggleViewMode"
+        :prepend-icon="appStore.viewMode === 'table' ? 'mdi-timeline' : 'mdi-table'"
+        :color="appStore.viewMode === 'timeline' ? 'primary' : 'default'"
+      >
+        {{ appStore.viewMode === 'table' ? '时间线' : '表格' }}
+      </v-btn>
+      <v-btn
         @click="todosStore.toggleShowArchived"
         :prepend-icon="todosStore.showArchived ? 'mdi-eye-off' : 'mdi-eye'"
       >

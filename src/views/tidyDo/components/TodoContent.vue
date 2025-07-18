@@ -65,47 +65,58 @@
       v-else
       class="todo-list"
     >
-      <!-- 表头 -->
-      <TableRow
-        :columns="appStore.tableColumns"
-        :isHeader="true"
-      >
-        <!-- 截止日期列自定义表头（包含排序功能） -->
-        <template #column-2>
-          <v-btn
-            variant="text"
-            density="compact"
-            class="text-body-2 font-weight-bold"
-            @click="appStore.toggleSort('endDate')"
-          >
-            截止日期
-            <v-icon
-              v-if="appStore.sortBy === 'endDate'"
-              size="small"
-              class="ms-1"
-            >
-              {{ appStore.sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
-            </v-icon>
-          </v-btn>
-        </template>
-      </TableRow>
-
-      <!-- Todo项列表 -->
-      <div class="bg-white">
-        <TodoItem
-          v-for="item in sortedTodos"
-          :key="item.id"
-          :itemData="item"
+      <!-- 表格视图 -->
+      <div v-if="appStore.viewMode === 'table'">
+        <!-- 表头 -->
+        <TableRow
           :columns="appStore.tableColumns"
-          :categories="categoriesStore.categories"
-          :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
-          :searchQuery="appStore.searchQuery"
-          @edit="handleEditTodo"
-          @status-change="handleStatusChange"
-          @copy="handleCopy"
-          @archive="handleArchive"
-        />
+          :isHeader="true"
+        >
+          <!-- 截止日期列自定义表头（包含排序功能） -->
+          <template #column-2>
+            <v-btn
+              variant="text"
+              density="compact"
+              class="text-body-2 font-weight-bold"
+              @click="appStore.toggleSort('endDate')"
+            >
+              截止日期
+              <v-icon
+                v-if="appStore.sortBy === 'endDate'"
+                size="small"
+                class="ms-1"
+              >
+                {{ appStore.sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+              </v-icon>
+            </v-btn>
+          </template>
+        </TableRow>
+
+        <!-- Todo项列表 -->
+        <div class="bg-white">
+          <TodoItem
+            v-for="item in sortedTodos"
+            :key="item.id"
+            :itemData="item"
+            :columns="appStore.tableColumns"
+            :categories="categoriesStore.categories"
+            :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
+            :searchQuery="appStore.searchQuery"
+            @edit="handleEditTodo"
+            @status-change="handleStatusChange"
+            @copy="handleCopy"
+            @archive="handleArchive"
+          />
+        </div>
       </div>
+
+      <!-- 时间线视图 -->
+      <TodoTimeline
+        v-else
+        :todos="appStore.currentTodos"
+        :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
+        :searchQuery="appStore.searchQuery"
+      />
     </div>
 
     <!-- 编辑弹窗 -->
@@ -135,6 +146,7 @@
 import { computed } from 'vue'
 import TodoItem from './TodoItem.vue'
 import TableRow from './TableRow.vue'
+import TodoTimeline from './TodoTimeline.vue'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'

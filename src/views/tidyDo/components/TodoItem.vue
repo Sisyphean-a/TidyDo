@@ -183,7 +183,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ConfigService } from '@/services/configService'
+import { useConfig } from '@/composables/useConfig'
 import TableRow from './TableRow.vue'
 
 const props = defineProps({
@@ -231,9 +231,12 @@ const emit = defineEmits([
   'show-about',
 ])
 
-// 配置数据
-const statusConfig = ref({})
-const priorityConfig = ref({})
+// 配置管理
+const { 
+  getStatusColor, 
+  getStatusText, 
+  getPriorityIcon 
+} = useConfig()
 
 // 计算截止日期是否过期
 const isOverdue = computed(() => {
@@ -293,20 +296,7 @@ const formatDate = (date) => {
   return `${year}/${month}/${day}`
 }
 
-// 获取状态颜色（基于配置）
-const getStatusColor = (status) => {
-  return statusConfig.value[status]?.color || 'grey'
-}
-
-// 获取状态文本（基于配置）
-const getStatusText = (status) => {
-  return statusConfig.value[status]?.text || '未知'
-}
-
-// 获取优先级icon（基于配置）
-const getPriorityIcon = (priority) => {
-  return priorityConfig.value[priority]?.icon || 'mdi-help-circle'
-}
+// 状态和优先级相关方法已从 useConfig 中导入
 
 // 获取分类名称
 const getCategoryName = () => {
@@ -356,16 +346,6 @@ const handleArchive = () => {
   emit('archive', props.itemData)
 }
 
-// 加载配置
-const loadConfig = async () => {
-  try {
-    statusConfig.value = await ConfigService.getStatusConfig()
-    priorityConfig.value = await ConfigService.getPriorityConfig()
-  } catch (error) {
-    console.error('加载配置失败：', error)
-  }
-}
-
 // 搜索高亮工具函数
 const highlightText = (text, query) => {
   if (!query || !text) return text
@@ -374,10 +354,9 @@ const highlightText = (text, query) => {
   return text.replace(searchRegex, '<mark class="search-highlight">$1</mark>')
 }
 
-// 组件挂载时加载配置
-onMounted(() => {
+// 组件挂载时初始化配置
+onMounted(async () => {
   console.log('item', props.itemData)
-  loadConfig()
 })
 </script>
 

@@ -7,6 +7,7 @@ export const useAppStore = defineStore('app', () => {
   // 状态
   const selectedCategoryId = ref(null)
   const viewAllMode = ref(false) // 查看全部模式
+  const viewMode = ref('table') // 视图模式: 'table' | 'timeline'
   const sortBy = ref('endDate') // 当前排序字段
   const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
   const searchQuery = ref('') // 搜索查询
@@ -174,10 +175,23 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  // 设置视图模式
+  const setViewMode = (mode) => {
+    if (mode === 'table' || mode === 'timeline') {
+      viewMode.value = mode
+    }
+  }
+
+  // 切换视图模式
+  const toggleViewMode = () => {
+    viewMode.value = viewMode.value === 'table' ? 'timeline' : 'table'
+  }
+
   // 重置应用状态
   const resetState = () => {
     selectedCategoryId.value = null
     viewAllMode.value = false
+    viewMode.value = 'table'
     sortBy.value = 'endDate'
     sortOrder.value = 'asc'
     searchQuery.value = ''
@@ -196,6 +210,7 @@ export const useAppStore = defineStore('app', () => {
     // 状态
     selectedCategoryId,
     viewAllMode,
+    viewMode,
     sortBy,
     sortOrder,
     searchQuery,
@@ -210,6 +225,8 @@ export const useAppStore = defineStore('app', () => {
     handleCategoryUpdated,
     enterViewAllMode,
     exitViewAllMode,
+    setViewMode,
+    toggleViewMode,
     toggleSort,
     initializeSelection,
     resetState,
