@@ -1,17 +1,18 @@
-import { initializeConfig } from './configService'
+import { ConfigService } from './configService'
 import { initializeDefaultData } from './todoService'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 import { useAppStore } from '@/stores/useAppStore'
 import { globalConfig } from '@/composables/useConfig'
+import { withErrorHandling, ErrorTypes } from '@/utils/errorHandler'
 
 /**
  * 应用初始化服务
  * 统一管理整个应用的启动流程，确保初始化的正确时序
  */
 export class AppService {
-  static isInitialized = false
-  static isInitializing = false
+  static #isInitialized = false
+  static #isInitializing = false
 
   /**
    * 初始化应用
@@ -19,58 +20,61 @@ export class AppService {
    * @param {boolean} options.force - 是否强制重新初始化
    * @returns {Promise<void>}
    */
-  static async initializeApp(options = {}) {
+  static initializeApp = withErrorHandling(async (options = {}) => {
     const { force = false } = options
 
     // 防止重复初始化
-    if (this.isInitialized && !force) {
+    if (this.#isInitialized && !force) {
       return
     }
 
     // 防止并发初始化
-    if (this.isInitializing) {
-      return new Promise((resolve) => {
-        const checkInitialized = () => {
-          if (this.isInitialized) {
-            resolve()
-          } else {
-            setTimeout(checkInitialized, 50)
-          }
-        }
-        checkInitialized()
-      })
+    if (this.#isInitializing) {
+      return this.#waitForInitialization()
     }
 
-    this.isInitializing = true
+    this.#isInitializing = true
 
     try {
-      // 1. 初始化配置
-      await initializeConfig()
+      // 并行初始化基础服务
+      await Promise.all([
+        ConfigService.getConfig(), // 确保默认配置存在
+        globalConfig.initializeConfig(), // 初始化全局配置
+        initializeDefaultData() // 初始化默认数据
+      ])
 
-      // 2. 初始化全局配置 composable
-      await globalConfig.initializeConfig()
-
-      // 3. 初始化默认数据
-      await initializeDefaultData()
-
-      // 4. 初始化 stores 数据
+      // 初始化 stores 数据
       await this.initializeStores()
 
-      this.isInitialized = true
+      this.#isInitialized = true
       console.log('✅ [AppService] 应用初始化完成')
-    } catch (error) {
-      console.error('❌ [AppService] 应用初始化失败:', error)
-      throw error
     } finally {
-      this.isInitializing = false
+      this.#isInitializing = false
     }
+  }, '应用初始化', ErrorTypes.BUSINESS)
+
+  /**
+   * 等待初始化完成
+   * @private
+   */
+  static #waitForInitialization() {
+    return new Promise((resolve) => {
+      const checkInitialized = () => {
+        if (this.#isInitialized) {
+          resolve()
+        } else {
+          setTimeout(checkInitialized, 50)
+        }
+      }
+      checkInitialized()
+    })
   }
 
   /**
    * 初始化 stores 数据
    * 确保正确的加载顺序和依赖关系
    */
-  static async initializeStores() {
+  static initializeStores = withErrorHandling(async () => {
     const categoriesStore = useCategoriesStore()
     const todosStore = useTodosStore()
     const appStore = useAppStore()
@@ -83,7 +87,7 @@ export class AppService {
 
     // 基于加载的数据初始化应用状态
     appStore.initializeSelection(categoriesStore.categories)
-  }
+  }, '初始化应用状态', ErrorTypes.BUSINESS)
 
   /**
    * 重新加载应用数据
@@ -126,8 +130,8 @@ export class AppService {
     appStore.resetState()
 
     // 重置初始化状态
-    this.isInitialized = false
-    this.isInitializing = false
+    this.#isInitialized = false
+    this.#isInitializing = false
   }
 
   /**
@@ -135,8 +139,8 @@ export class AppService {
    */
   static getInitializationStatus() {
     return {
-      isInitialized: this.isInitialized,
-      isInitializing: this.isInitializing
+      isInitialized: this.#isInitialized,
+      isInitializing: this.#isInitializing
     }
   }
 }

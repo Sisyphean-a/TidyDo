@@ -1,10 +1,22 @@
 import { get, set, del, keys } from 'idb-keyval'
+import { generateId } from '@/utils/idGenerator'
+import { withErrorHandling, ErrorTypes } from '@/utils/errorHandler'
 
 // 数据结构设计
 export const TODO_CATEGORIES_KEY = 'todo-categories'
 export const TODO_ITEMS_KEY = 'todo-items'
 
-// 分类数据结构
+/**
+ * 创建分类数据结构
+ * @param {string} id - 分类ID
+ * @param {string} name - 分类名称
+ * @param {string} icon - 分类图标，默认为'mdi-folder'
+ * @param {boolean} isExpanded - 是否展开，默认为true
+ * @param {boolean} isFilterCategory - 是否为筛选类，默认为false
+ * @param {Object|null} filterConditions - 筛选条件，默认为null
+ * @param {number} order - 排序值，默认为0
+ * @returns {Object} 分类对象
+ */
 export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, filterConditions = null, order = 0) => ({
   id,
   name,
@@ -23,7 +35,17 @@ export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true,
   updatedAt: new Date().toISOString(),
 })
 
-// Todo项数据结构（设计为可扩展）
+/**
+ * 创建Todo项数据结构（设计为可扩展）
+ * @param {string} id - Todo项ID
+ * @param {string} categoryId - 所属分类ID
+ * @param {string} title - 标题
+ * @param {string} customNumber - 用户自定义编号，默认为空字符串
+ * @param {string} description - 描述，默认为空字符串
+ * @param {string} priority - 优先级（low, medium, high），默认为'medium'
+ * @param {string} status - 状态（pending, completed, cancelled），默认为'pending'
+ * @returns {Object} Todo项对象
+ */
 export const createTodoItem = (
   id,
   categoryId,
@@ -49,9 +71,12 @@ export const createTodoItem = (
   updatedAt: new Date().toISOString(),
 })
 
-// 分类服务
+/**
+ * 分类服务类
+ * 负责分类数据的CRUD操作和持久化存储
+ */
 export class CategoryService {
-  static async getAll() {
+  static getAll = withErrorHandling(async () => {
     const categories = (await get(TODO_CATEGORIES_KEY)) || []
     // 按 order 字段排序，如果没有 order 字段则按创建时间排序
     return categories.sort((a, b) => {
@@ -60,14 +85,14 @@ export class CategoryService {
       }
       return new Date(a.createdAt) - new Date(b.createdAt)
     })
-  }
+  }, '获取分类列表', ErrorTypes.STORAGE)
 
   static async getById(id) {
     const categories = await this.getAll()
     return categories.find((cat) => cat.id === id)
   }
 
-  static async save(category) {
+  static save = withErrorHandling(async (category) => {
     const categories = await this.getAll()
     const existingIndex = categories.findIndex((cat) => cat.id === category.id)
 
@@ -104,7 +129,7 @@ export class CategoryService {
 
     await set(TODO_CATEGORIES_KEY, categories)
     return sanitizedCategory
-  }
+  }, '保存分类', ErrorTypes.STORAGE)
 
   static async delete(id) {
     const categories = await this.getAll()
@@ -155,12 +180,15 @@ export class CategoryService {
   }
 }
 
-// Todo项服务
+/**
+ * Todo项服务类
+ * 负责待办事项数据的CRUD操作和持久化存储
+ */
 export class TodoItemService {
-  static async getAll() {
+  static getAll = withErrorHandling(async () => {
     const items = (await get(TODO_ITEMS_KEY)) || []
     return items
-  }
+  }, '获取待办事项列表', ErrorTypes.STORAGE)
 
   static async getByCategoryId(categoryId) {
     const items = await this.getAll()
@@ -172,7 +200,7 @@ export class TodoItemService {
     return items.find((item) => item.id === id)
   }
 
-  static async save(item) {
+  static save = withErrorHandling(async (item) => {
     const items = await this.getAll()
     const existingIndex = items.findIndex((i) => i.id === item.id)
 
@@ -192,7 +220,7 @@ export class TodoItemService {
 
     await set(TODO_ITEMS_KEY, items)
     return sanitizedItem
-  }
+  }, '保存待办事项', ErrorTypes.STORAGE)
 
   static async delete(id) {
     const items = await this.getAll()
@@ -206,12 +234,20 @@ export class TodoItemService {
     await set(TODO_ITEMS_KEY, filtered)
   }
 
+  /**
+   * 生成唯一ID
+   * @returns {string} 生成的唯一ID
+   */
   static generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2)
+    return generateId()
   }
 }
 
-// 初始化默认数据
+/**
+ * 初始化默认数据
+ * 如果没有分类数据，创建默认分类
+ * @returns {Promise<void>}
+ */
 export const initializeDefaultData = async () => {
   const categories = await CategoryService.getAll()
   if (categories.length === 0) {

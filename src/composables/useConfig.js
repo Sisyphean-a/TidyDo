@@ -1,11 +1,6 @@
 import { ref, computed } from 'vue'
 import { ConfigService } from '@/services/configService'
 
-// 全局配置缓存
-let configCache = null
-let statusConfigCache = null
-let priorityConfigCache = null
-
 // 状态字段映射 - 统一数据库存储格式和显示格式
 const STATUS_FIELD_MAP = {
   // 数据库存储格式 -> 配置键名
@@ -24,47 +19,33 @@ const CONFIG_TO_DB_MAP = {
   cancelled: 'cancelled',
 }
 
-// 全局响应式状态
-let globalStatusConfig = null
-let globalPriorityConfig = null
-let globalFieldConfig = null
-let globalSystemConfig = null
-let globalIsLoading = null
+// 全局响应式状态 - 使用单例模式确保状态共享
+const globalState = {
+  statusConfig: ref({}),
+  priorityConfig: ref({}),
+  fieldConfig: ref({}),
+  systemConfig: ref({}),
+  isLoading: ref(false),
+  isInitialized: ref(false)
+}
 
+/**
+ * 配置管理组合式函数
+ * 提供响应式的配置状态管理和便捷的配置访问方法
+ * @returns {Object} 配置相关的状态和方法
+ */
 export const useConfig = () => {
-  // 使用全局状态，确保所有实例共享同一份配置
-  if (!globalStatusConfig) {
-    globalStatusConfig = ref({})
-    globalPriorityConfig = ref({})
-    globalFieldConfig = ref({})
-    globalSystemConfig = ref({})
-    globalIsLoading = ref(false)
-    
-    // 如果有缓存，立即恢复
-    if (statusConfigCache) {
-      globalStatusConfig.value = statusConfigCache
-      globalPriorityConfig.value = priorityConfigCache
-    }
-  }
-  
-  const statusConfig = globalStatusConfig
-  const priorityConfig = globalPriorityConfig
-  const fieldConfig = globalFieldConfig
-  const systemConfig = globalSystemConfig
-  const isLoading = globalIsLoading
+  const { statusConfig, priorityConfig, fieldConfig, systemConfig, isLoading, isInitialized } = globalState
 
   // 初始化配置
   const initializeConfig = async () => {
-    if (configCache) {
-      // 使用缓存
-      statusConfig.value = statusConfigCache
-      priorityConfig.value = priorityConfigCache
+    if (isInitialized.value) {
       return
     }
 
     isLoading.value = true
     try {
-      // 加载所有配置
+      // 并行加载所有配置
       const [status, priority, field, system] = await Promise.all([
         ConfigService.getStatusConfig(),
         ConfigService.getPriorityConfig(),
@@ -76,29 +57,22 @@ export const useConfig = () => {
       priorityConfig.value = priority
       fieldConfig.value = field
       systemConfig.value = system
+      isInitialized.value = true
 
-      // 缓存配置
-      statusConfigCache = status
-      priorityConfigCache = priority
-      configCache = true
-      
-      // 确保全局状态也更新
-      if (globalStatusConfig && globalStatusConfig !== statusConfig) {
-        globalStatusConfig.value = status
-        globalPriorityConfig.value = priority
-        globalFieldConfig.value = field
-        globalSystemConfig.value = system
-      }
-      
       console.log('✅ [useConfig] 配置初始化完成')
     } catch (error) {
       console.error('❌ [useConfig] 配置初始化失败:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
   }
 
-  // 获取状态配置
+  /**
+   * 获取状态配置
+   * @param {string} statusKey - 状态键名
+   * @returns {Object} 状态配置对象，包含text和color属性
+   */
   const getStatusConfig = (statusKey) => {
     // 先尝试直接匹配
     if (statusConfig.value[statusKey]) {
@@ -112,9 +86,9 @@ export const useConfig = () => {
     }
 
     // 如果还没有配置，尝试异步初始化（但不等待结果）
-    if (!configCache) {
+    if (!isInitialized.value) {
       console.warn('⚠️ [useConfig] 配置未初始化，尝试异步初始化配置...')
-      initializeConfig()
+      initializeConfig().catch(console.error)
     }
 
     // 默认返回
@@ -136,7 +110,6 @@ export const useConfig = () => {
 
   // 获取状态图标
   const getStatusIcon = (status) => {
-    const config = getStatusConfig(status)
     // 根据状态返回合适的图标
     const iconMap = {
       pending: 'mdi-clock-outline',
@@ -149,11 +122,15 @@ export const useConfig = () => {
     return iconMap[mappedKey] || 'mdi-help-circle'
   }
 
-  // 获取优先级配置
+  /**
+   * 获取优先级配置
+   * @param {string} priority - 优先级键名
+   * @returns {Object} 优先级配置对象，包含text、color和icon属性
+   */
   const getPriorityConfig = (priority) => {
     // 如果还没有配置，尝试异步初始化（但不等待结果）
-    if (!configCache) {
-      initializeConfig()
+    if (!isInitialized.value) {
+      initializeConfig().catch(console.error)
     }
 
     return (
@@ -200,17 +177,11 @@ export const useConfig = () => {
 
   // 清除缓存（用于配置更新后）
   const clearCache = () => {
-    configCache = null
-    statusConfigCache = null
-    priorityConfigCache = null
-    
-    // 重置全局状态
-    if (globalStatusConfig) {
-      globalStatusConfig.value = {}
-      globalPriorityConfig.value = {}
-      globalFieldConfig.value = {}
-      globalSystemConfig.value = {}
-    }
+    statusConfig.value = {}
+    priorityConfig.value = {}
+    fieldConfig.value = {}
+    systemConfig.value = {}
+    isInitialized.value = false
   }
 
   return {
@@ -224,6 +195,7 @@ export const useConfig = () => {
     // 初始化方法
     initializeConfig,
     clearCache,
+    isInitialized,
 
     // 状态相关方法
     getStatusConfig,

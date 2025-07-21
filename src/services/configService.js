@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval'
+import { withErrorHandling, ErrorTypes } from '@/utils/errorHandler'
 
 // 配置数据的Key
 export const CONFIG_KEY = 'app-config'
@@ -73,10 +74,17 @@ export const DEFAULT_CONFIG = {
   },
 }
 
-// 配置服务类
+/**
+ * 配置服务类
+ * 负责应用配置的持久化存储和管理
+ */
 export class ConfigService {
-  // 获取完整配置
-  static async getConfig() {
+  /**
+   * 获取完整配置
+   * 如果配置不存在，会自动创建默认配置
+   * @returns {Promise<Object>} 完整的配置对象
+   */
+  static getConfig = withErrorHandling(async () => {
     const config = await get(CONFIG_KEY)
     if (!config) {
       // 如果没有配置，返回默认配置并保存
@@ -86,14 +94,19 @@ export class ConfigService {
 
     // 合并默认配置和已保存的配置，确保新增的配置项能被包含
     return this.mergeConfig(DEFAULT_CONFIG, config)
-  }
+  }, '获取配置', ErrorTypes.STORAGE)
 
-  // 保存配置
-  static async saveConfig(config) {
+  /**
+   * 保存配置
+   * 会自动与默认配置合并，确保配置完整性
+   * @param {Object} config - 要保存的配置对象
+   * @returns {Promise<Object>} 保存后的完整配置对象
+   */
+  static saveConfig = withErrorHandling(async (config) => {
     const mergedConfig = this.mergeConfig(DEFAULT_CONFIG, config)
     await set(CONFIG_KEY, mergedConfig)
     return mergedConfig
-  }
+  }, '保存配置', ErrorTypes.STORAGE)
 
   // 获取状态配置
   static async getStatusConfig() {
@@ -150,7 +163,13 @@ export class ConfigService {
     return DEFAULT_CONFIG
   }
 
-  // 深度合并配置对象
+  /**
+   * 深度合并配置对象
+   * 递归合并默认配置和用户配置，保留用户的自定义设置
+   * @param {Object} defaultConfig - 默认配置对象
+   * @param {Object} userConfig - 用户配置对象
+   * @returns {Object} 合并后的配置对象
+   */
   static mergeConfig(defaultConfig, userConfig) {
     const result = {}
 
@@ -177,7 +196,4 @@ export class ConfigService {
   }
 }
 
-// 初始化配置
-export const initializeConfig = async () => {
-  await ConfigService.getConfig()
-}
+

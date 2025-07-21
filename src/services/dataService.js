@@ -1,9 +1,16 @@
 import { keys, get, set, clear } from 'idb-keyval'
 import { TODO_CATEGORIES_KEY, TODO_ITEMS_KEY } from './todoService'
 
-// 数据备份和恢复服务
+/**
+ * 数据备份和恢复服务类
+ * 提供数据的导入导出功能，支持备份和恢复应用数据
+ */
 export class DataService {
-  // 导出所有数据
+  /**
+   * 导出所有数据
+   * @returns {Promise<Object>} 包含版本信息、时间戳和数据的导出对象
+   * @throws {Error} 当导出失败时抛出错误
+   */
   static async exportAllData() {
     try {
       const exportData = {
@@ -28,7 +35,15 @@ export class DataService {
     }
   }
 
-  // 导入数据
+  /**
+   * 导入数据
+   * @param {Object} importData - 要导入的数据对象
+   * @param {Object} options - 导入选项
+   * @param {boolean} options.clearExisting - 是否清除现有数据，默认为false
+   * @param {boolean} options.mergeData - 是否合并数据，默认为true
+   * @returns {Promise<Object>} 导入结果对象
+   * @throws {Error} 当导入失败时抛出错误
+   */
   static async importData(importData, options = {}) {
     try {
       const { clearExisting = false, mergeData = true } = options
