@@ -1,23 +1,7 @@
 import { ref, computed } from 'vue'
 import { ConfigService } from '@/services/configService'
 
-// 状态字段映射 - 统一数据库存储格式和显示格式
-const STATUS_FIELD_MAP = {
-  // 数据库存储格式 -> 配置键名
-  pending: 'pending',
-  in_progress: 'inProgress', // 数据库中可能是 in_progress
-  inProgress: 'inProgress', // 配置中是 inProgress
-  completed: 'completed',
-  cancelled: 'cancelled',
-}
-
-// 反向映射 - 配置键名 -> 数据库存储格式
-const CONFIG_TO_DB_MAP = {
-  pending: 'pending',
-  inProgress: 'inProgress', // 统一使用 inProgress
-  completed: 'completed',
-  cancelled: 'cancelled',
-}
+// 数据库和配置统一使用相同的状态键名：pending, inProgress, completed, cancelled
 
 // 全局响应式状态 - 使用单例模式确保状态共享
 const globalState = {
@@ -74,15 +58,9 @@ export const useConfig = () => {
    * @returns {Object} 状态配置对象，包含text和color属性
    */
   const getStatusConfig = (statusKey) => {
-    // 先尝试直接匹配
+    // 直接从配置中获取
     if (statusConfig.value[statusKey]) {
       return statusConfig.value[statusKey]
-    }
-
-    // 使用字段映射
-    const mappedKey = STATUS_FIELD_MAP[statusKey]
-    if (mappedKey && statusConfig.value[mappedKey]) {
-      return statusConfig.value[mappedKey]
     }
 
     // 如果还没有配置，尝试异步初始化（但不等待结果）
@@ -118,8 +96,7 @@ export const useConfig = () => {
       cancelled: 'mdi-cancel',
     }
 
-    const mappedKey = STATUS_FIELD_MAP[status] || status
-    return iconMap[mappedKey] || 'mdi-help-circle'
+    return iconMap[status] || 'mdi-help-circle'
   }
 
   /**
@@ -161,7 +138,7 @@ export const useConfig = () => {
   const availableStatuses = computed(() => {
     return Object.keys(statusConfig.value).map((key) => ({
       key,
-      value: CONFIG_TO_DB_MAP[key] || key,
+      value: key, // 数据库和配置使用相同的键名
       ...statusConfig.value[key],
     }))
   })
