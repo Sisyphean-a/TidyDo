@@ -154,7 +154,7 @@ export class CategoryService {
   static async updateOrder(categoryId, direction) {
     const categories = await get(TODO_CATEGORIES_KEY) || []
     const currentIndex = categories.findIndex((cat) => cat.id === categoryId)
-    
+
     if (currentIndex === -1) return false
 
     let targetIndex
@@ -170,6 +170,38 @@ export class CategoryService {
     [categories[currentIndex], categories[targetIndex]] = [categories[targetIndex], categories[currentIndex]]
 
     // 更新 order 字段
+    categories.forEach((cat, index) => {
+      cat.order = index
+      cat.updatedAt = new Date().toISOString()
+    })
+
+    await set(TODO_CATEGORIES_KEY, categories)
+    return true
+  }
+
+  // 拖拽排序 - 将分类移动到指定位置
+  static async reorderByDrag(categoryId, targetIndex) {
+    const categories = await get(TODO_CATEGORIES_KEY) || []
+    const currentIndex = categories.findIndex((cat) => cat.id === categoryId)
+
+    // 修复边界检查：允许 targetIndex 等于 categories.length（插入到末尾）
+    if (currentIndex === -1 || targetIndex < 0 || targetIndex > categories.length) {
+      return false
+    }
+
+    if (currentIndex === targetIndex) {
+      return true // 位置没有变化
+    }
+
+    // 移除当前项
+    const [movedCategory] = categories.splice(currentIndex, 1)
+
+    // 插入到目标位置
+    // 注意：移除元素后，如果 targetIndex > currentIndex，需要调整索引
+    const adjustedTargetIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex
+    categories.splice(adjustedTargetIndex, 0, movedCategory)
+
+    // 更新所有分类的 order 字段
     categories.forEach((cat, index) => {
       cat.order = index
       cat.updatedAt = new Date().toISOString()

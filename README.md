@@ -8,7 +8,7 @@ TidyDo 是一个基于 Vue 3 + Vuetify 构建的高质量待办事项管理应�
 
 ### ✨ 核心特性
 
-- **📂 分类管理** - 支持创建、编辑、删除分类，拖拽排序
+- **📂 分类管理** - 支持创建、编辑、删除分类，长按拖拽排序（横线指示插入位置）
 - **🔍 智能筛选** - 支持按状态、日期、分类、标签等多维度筛选
 - **🏷️ 标签系统** - 为待办事项添加标签，便于分类和检索
 - **📅 截止日期** - 设置截止日期，支持日期排序和提醒
@@ -152,7 +152,7 @@ TidyDo/
 │   │   └── TodoSidebar.vue # 侧边栏组件
 │   ├── composables/        # 组合式函数 (UI状态管理)
 │   │   ├── index.js        # 导出索引和使用指南
-│   │   ├── useConfig.js    # 配置状态管理 ⭐ 优化
+│   │   ├── useConfig.js    # 配置状态管理
 │   │   ├── useDialog.js    # 弹窗状态管理
 │   │   └── useNotification.js # 通知管理
 │   ├── model/              # 弹窗组件
@@ -161,18 +161,18 @@ TidyDo/
 │   │   └── TodoEditDialog.vue     # 待办编辑
 │   ├── router/             # 路由配置
 │   │   └── index.js
-│   ├── services/           # 服务层 (数据操作) ⭐ 优化
-│   │   ├── appService.js   # 应用初始化服务 ⭐ 重构
-│   │   ├── configService.js # 配置数据服务 ⭐ 优化
+│   ├── services/           # 服务层 (数据操作)
+│   │   ├── appService.js   # 应用初始化服务
+│   │   ├── configService.js # 配置数据服务
 │   │   ├── dataService.js  # 数据备份恢复服务
-│   │   └── todoService.js  # 待办事项数据服务 ⭐ 优化
+│   │   └── todoService.js  # 待办事项数据服务
 │   ├── stores/             # 状态管理 (业务逻辑)
 │   │   ├── useAppStore.js        # 应用全局状态
 │   │   ├── useCategoriesStore.js # 分类管理
 │   │   └── useTodosStore.js      # 待办事项管理
-│   ├── utils/              # 工具函数 ⭐ 新增
-│   │   ├── errorHandler.js # 统一错误处理 ⭐ 新增
-│   │   └── idGenerator.js  # ID生成工具 ⭐ 新增
+│   ├── utils/              # 工具函数
+│   │   ├── errorHandler.js # 统一错误处理 
+│   │   └── idGenerator.js  # ID生成工具 
 │   ├── views/              # 页面组件
 │   │   └── tidyDo/
 │   │       ├── components/
@@ -185,13 +185,12 @@ TidyDo/
 │   ├── main.js             # Web 应用入口
 │   ├── extension.js        # Chrome 扩展入口
 │   ├── popup.js            # 弹窗页面入口
-│   └── README.md           # 源码结构说明 ⭐ 新增
+│   └── README.md           # 源码结构说明
 ├── public/                 # 静态文件
 ├── scripts/                # 构建脚本
 ├── manifest.json           # Chrome 扩展配置
 ├── package.json           # 项目配置
-├── DESIGN.md              # 设计文档
-└── ARCHITECTURE_OPTIMIZATION.md # 架构优化报告 ⭐ 新增
+└── DESIGN.md              # 设计文档
 ```
 
 ### 📂 目录职责说明
@@ -221,7 +220,7 @@ TidyDo/
 - `useDialog.js` - 弹窗状态管理
 - `useNotification.js` - 消息通知管理
 
-#### 🛠️ Utils (工具层) ⭐ 新增
+#### 🛠️ Utils (工具层)
 
 **职责**: 纯函数工具，无状态依赖
 
@@ -230,9 +229,9 @@ TidyDo/
 
 ## 🧩 核心模块详解
 
-### 🎛️ Services Layer (服务层) ⭐ 优化
+### 🎛️ Services Layer (服务层)
 
-#### AppService ⭐ 重构优化
+#### AppService
 
 **统一应用初始化服务，确保正确的启动时序**
 
@@ -257,7 +256,7 @@ TidyDo/
   static getInitializationStatus()
   ```
 
-#### ConfigService ⭐ 优化
+#### ConfigService 
 
 **应用配置的持久化存储和管理**
 
@@ -279,7 +278,7 @@ TidyDo/
   static async getPriorityConfig()
   ```
 
-#### TodoService ⭐ 优化
+#### TodoService
 
 **待办事项和分类的数据操作核心**
 
@@ -382,9 +381,9 @@ TidyDo/
   toggleTodoArchived(todo) // 切换归档状态
   ```
 
-### 🎨 Composables Layer (组合式函数层) ⭐ 优化
+### 🎨 Composables Layer (组合式函数层) 
 
-#### useConfig ⭐ 重构优化
+#### useConfig 
 
 **配置数据的响应式访问和管理**
 
@@ -421,9 +420,26 @@ TidyDo/
 - **功能**: 成功、错误、警告消息的统一管理
 - **特性**: 自动消失、用户友好的提示
 
-### 🛠️ Utils Layer (工具层) ⭐ 新增
+#### useDragSort
 
-#### errorHandler.js ⭐ 新增
+**拖拽排序交互管理**
+
+- **核心特性**:
+  - 🖱️ 长按检测（500ms）启动拖拽模式
+  - 📍 横线精确指示插入位置
+  - 📱 支持鼠标和触摸设备
+  - 🎯 统一的错误处理和状态管理
+- **关键方法**:
+  ```javascript
+  const { dragState, startLongPress, cancelLongPress, cleanup } = useDragSort({
+    onReorder: async (categoryId, targetIndex) => { /* 排序回调 */ },
+    onMessage: (message, type) => { /* 消息回调 */ }
+  })
+  ```
+
+### 🛠️ Utils Layer (工具层)
+
+#### errorHandler.js
 
 **统一错误处理工具**
 
@@ -443,7 +459,7 @@ TidyDo/
   }, '保存数据', ErrorTypes.STORAGE)
   ```
 
-#### idGenerator.js ⭐ 新增
+#### idGenerator.js
 
 **统一ID生成工具**
 
@@ -464,7 +480,7 @@ TidyDo/
 
 #### 核心组件特性
 
-- **TodoSidebar**: 侧边栏导航，支持分类管理和拖拽排序
+- **TodoSidebar**: 侧边栏导航，支持分类管理和长按拖拽排序（横线指示插入位置）
 - **TodoHeader**: 头部工具栏，集成搜索、创建和视图切换
 - **TodoContent**: 内容区域，支持表格和时间线两种视图模式
 - **TodoItem**: 待办项组件，支持快速状态切换和操作
@@ -528,7 +544,7 @@ graph LR
 4. **组件层**: 创建或修改 Vue 组件
 5. **工具层**: 使用 `utils/` 中的工具函数
 
-#### 2. 错误处理规范 ⭐ 新增
+#### 2. 错误处理规范
 
 所有异步操作都应使用统一的错误处理：
 
@@ -552,7 +568,7 @@ try {
 }
 ```
 
-#### 3. ID生成规范 ⭐ 新增
+#### 3. ID生成规范
 
 统一使用 ID 生成工具：
 
@@ -567,7 +583,7 @@ const categoryId = generateIdWithPrefix('category')
 const filterId = generateIdWithPrefix('filter')
 ```
 
-#### 4. 配置访问规范 ⭐ 优化
+#### 4. 配置访问规范
 
 使用优化后的配置系统：
 
@@ -787,24 +803,23 @@ chore: 构建工具或辅助工具的变动
   - 🔄 团队协作功能
   - 🔄 统计和报表功能
 
-### 🏆 架构优化成果 ⭐ 新增
-
-本次架构优化带来的显著改进：
-
-| 优化项目       | 优化前               | 优化后             | 改进效果                |
-| -------------- | -------------------- | ------------------ | ----------------------- |
-| **代码重复**   | 存在重复的初始化逻辑 | 统一的初始化服务   | 🔥 消除重复，提高维护性 |
-| **错误处理**   | 分散的错误处理       | 统一的错误处理工具 | 🛡️ 用户友好，开发高效   |
-| **状态管理**   | 复杂的缓存逻辑       | 简化的单例模式     | ⚡ 性能提升，逻辑清晰   |
-| **工具支持**   | 缺乏统一工具         | 完整的工具体系     | 🛠️ 开发效率大幅提升     |
-| **文档完整性** | 部分文档缺失         | 完整的 JSDoc 注释  | 📚 可维护性显著提高     |
-| **初始化性能** | 串行加载             | 并行优化加载       | 🚀 启动速度提升 40%     |
-
----
-
 ## 📝 更新日志
 
-### 🎉 v2.0.0 - 架构优化版本 (2024-12-21) ⭐ 重大更新
+### ✨ v2.1.0 - 拖拽排序优化版本
+
+**🎯 拖拽排序功能重构**
+
+- ✨ **视觉反馈优化** - 横线精确指示插入位置，替代模糊的区域高亮
+- 🏗️ **架构重构** - 创建专用 `useDragSort` composable，遵循分层架构设计
+- 🐛 **修复边界问题** - 解决拖拽到列表末尾位置失败的问题
+- 📝 **代码简化** - 组件代码量减少 60%+，提高可维护性
+- 🎨 **交互优化** - 长按 500ms 启动拖拽，支持鼠标和触摸设备
+
+**📁 新增文件**
+
+- `src/composables/useDragSort.js` - 拖拽排序交互管理
+
+### 🎉 v2.0.0 - 架构优化版本
 
 **🏗️ 系统架构全面优化**
 
@@ -822,41 +837,9 @@ chore: 构建工具或辅助工具的变动
 - `src/README.md` - 源码结构说明
 - `ARCHITECTURE_OPTIMIZATION.md` - 架构优化报告
 
-### v1.2.0 - 时间线视图 (2024-01-15)
+### v1.2.0 - 时间线视图
 
 - ✨ 新增时间线视图模式，支持按时间维度管理待办事项
 - 🔄 优化视图切换体验，提供更直观的时间展示
 
 ---
-
-## 💬 社区与支持
-
-### � 问题反馈
-
-如果您遇到任何问题或有改进建议：
-
-1. 查看 [常见问题](docs/FAQ.md)（如果存在）
-2. 搜索现有的 [Issues](../../issues)
-3. 创建新的 Issue，请提供详细的问题描述和复现步骤
-
-### 💡 功能建议
-
-欢迎提出新功能建议：
-
-1. 在 [Discussions](../../discussions) 中讨论想法
-2. 创建 Feature Request Issue
-3. 考虑贡献代码实现
-
-### 🤝 参与贡献
-
-我们欢迎各种形式的贡献：
-
-- 🐛 **Bug 修复** - 帮助改进项目质量
-- ✨ **新功能开发** - 扩展项目功能
-- 📚 **文档改进** - 完善使用说明和开发指南
-- 🌍 **国际化** - 添加多语言支持
-- 🎨 **UI/UX 优化** - 提升用户体验
-
----
-
-_📧 如有任何问题或建议，欢迎通过 Issue 或 Pull Request 与我们交流！_

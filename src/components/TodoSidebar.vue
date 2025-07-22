@@ -19,78 +19,101 @@
       <v-divider></v-divider>
 
       <!-- 分类列表 -->
-      <v-list
-        density="compact"
-        nav
-      >
-        <!-- 分类项 -->
+      <div class="category-list-container">
+        <!-- 拖拽指示线 -->
         <div
-          v-for="category in categories"
-          :key="category.id"
-        >
-          <v-list-item
-            :prepend-icon="category.icon"
-            :title="category.name"
-            :active="selectedCategoryId === category.id"
-            @click="handleCategoryClick(category)"
-            class="category-item"
-          >
-            <template
-              v-slot:append
-              v-if="!isRailMode"
-            >
-              <div class="category-actions">
-                <span
-                  v-if="!category.isFilterCategory"
-                  class="text-caption"
-                >
-                  {{ getCategoryTodoCount(category.id) }}
-                </span>
+          v-if="dragState.dropLinePosition?.visible"
+          class="drag-drop-line"
+          :style="{ top: `${dragState.dropLinePosition.top}px` }"
+        />
 
-                <!-- 分类菜单 -->
-                <v-menu location="bottom end">
-                  <template v-slot:activator="{ props }">
-                    <v-btn
-                      icon
-                      size="x-small"
-                      variant="text"
-                      v-bind="props"
-                      @click.stop
-                    >
-                      <v-icon size="small">mdi-dots-vertical</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list density="compact">
-                    <v-list-item
-                      prepend-icon="mdi-arrow-up"
-                      title="上移"
-                      @click="handleMoveCategoryUp(category)"
-                      :disabled="isFirstCategory(category.id)"
-                    />
-                    <v-list-item
-                      prepend-icon="mdi-arrow-down"
-                      title="下移"
-                      @click="handleMoveCategoryDown(category)"
-                      :disabled="isLastCategory(category.id)"
-                    />
-                    <v-divider />
-                    <v-list-item
-                      prepend-icon="mdi-pencil"
-                      title="编辑"
-                      @click="handleEditCategory(category)"
-                    />
-                    <v-list-item
-                      prepend-icon="mdi-delete"
-                      title="删除"
-                      @click="handleDeleteCategory(category)"
-                    />
-                  </v-list>
-                </v-menu>
-              </div>
-            </template>
-          </v-list-item>
-        </div>
-      </v-list>
+        <v-list
+          density="compact"
+          nav
+        >
+          <!-- 分类项 -->
+          <div
+            v-for="(category, index) in categories"
+            :key="category.id"
+            :data-category-id="category.id"
+            :data-category-index="index"
+            class="category-wrapper"
+            :class="{ 'dragging': dragState.isDragging && dragState.draggedCategoryId === category.id }"
+          >
+            <v-list-item
+              :prepend-icon="category.icon"
+              :title="category.name"
+              :active="selectedCategoryId === category.id"
+              @click="handleCategoryClick(category)"
+              class="category-item"
+            >
+              <template
+                v-slot:append
+                v-if="!isRailMode"
+              >
+                <div class="category-actions">
+                  <span
+                    v-if="!category.isFilterCategory"
+                    class="text-caption"
+                  >
+                    {{ getCategoryTodoCount(category.id) }}
+                  </span>
+
+                  <!-- 分类菜单 -->
+                  <v-menu
+                    location="bottom end"
+                    :disabled="dragState.isDragging"
+                  >
+                    <template v-slot:activator="{ props }">
+                      <v-btn
+                        icon
+                        size="x-small"
+                        variant="text"
+                        v-bind="props"
+                        @click.stop
+                        @mousedown="handleMenuMouseDown(category, $event)"
+                        @mouseup="handleMenuMouseUp"
+                        @mouseleave="handleMenuMouseLeave"
+                        @touchstart="handleMenuTouchStart(category, $event)"
+                        @touchend="handleMenuTouchEnd"
+                        class="category-menu-btn"
+                        :class="{ 'drag-handle': dragState.isDragging && dragState.draggedCategoryId === category.id }"
+                      >
+                        <v-icon size="small">mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list density="compact">
+                      <v-list-item
+                        prepend-icon="mdi-arrow-up"
+                        title="上移"
+                        @click="handleMoveCategoryUp(category)"
+                        :disabled="isFirstCategory(category.id)"
+                      />
+                      <v-list-item
+                        prepend-icon="mdi-arrow-down"
+                        title="下移"
+                        @click="handleMoveCategoryDown(category)"
+                        :disabled="isLastCategory(category.id)"
+                      />
+                      <v-divider />
+                      <v-list-item
+                        prepend-icon="mdi-pencil"
+                        title="编辑"
+                        @click="handleEditCategory(category)"
+                      />
+                      <v-list-item
+                        prepend-icon="mdi-delete"
+                        title="删除"
+                        @click="handleDeleteCategory(category)"
+                      />
+                    </v-list>
+                  </v-menu>
+                </div>
+              </template>
+            </v-list-item>
+          </div>
+        </v-list>
+      </div>
 
       <!-- 底部工具栏 -->
       <template v-slot:append>
@@ -160,10 +183,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ConfigDialog from '@/model/ConfigDialog.vue'
 import CategoryEditDialog from '@/model/CategoryEditDialog.vue'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useDragSort } from '@/composables/useDragSort'
 
 const props = defineProps({
   selectedCategoryId: {
@@ -202,6 +226,29 @@ const snackbar = ref({
   message: '',
   color: 'success',
   timeout: 2000,
+})
+
+/**
+ * 显示消息提示
+ * @param {string} message - 消息内容
+ * @param {string} color - 消息颜色类型
+ */
+const showMessage = (message, color = 'success') => {
+  snackbar.value = {
+    visible: true,
+    message,
+    color,
+    timeout: 2000,
+  }
+}
+
+// 拖拽排序功能
+const { dragState, startLongPress, cancelLongPress, cleanup } = useDragSort({
+  onReorder: async (categoryId, targetIndex) => {
+    await categoriesStore.reorderCategoriesByDrag(categoryId, targetIndex)
+    emit('category-updated', categories.value)
+  },
+  onMessage: showMessage
 })
 
 // 创建分类
@@ -308,16 +355,6 @@ const handleSettingsClick = () => {
   isConfigDialogVisible.value = true
 }
 
-// 显示消息
-const showMessage = (message, color = 'success') => {
-  snackbar.value = {
-    visible: true,
-    message,
-    color,
-    timeout: 2000,
-  }
-}
-
 // 处理保存分类
 const handleSaveCategory = async (categoryData) => {
   try {
@@ -349,6 +386,47 @@ const handleSaveCategory = async (categoryData) => {
   }
 }
 
+// ==================== 拖拽功能相关方法 ====================
+
+/**
+ * 处理菜单按钮的鼠标按下事件
+ * @param {Object} category - 分类对象
+ * @param {MouseEvent} event - 鼠标事件
+ */
+const handleMenuMouseDown = (category, event) => {
+  startLongPress(category, event)
+}
+
+/**
+ * 处理菜单按钮的鼠标抬起事件
+ */
+const handleMenuMouseUp = () => {
+  cancelLongPress()
+}
+
+/**
+ * 处理菜单按钮的鼠标离开事件
+ */
+const handleMenuMouseLeave = () => {
+  cancelLongPress()
+}
+
+/**
+ * 处理菜单按钮的触摸开始事件
+ * @param {Object} category - 分类对象
+ * @param {TouchEvent} event - 触摸事件
+ */
+const handleMenuTouchStart = (category, event) => {
+  startLongPress(category, event)
+}
+
+/**
+ * 处理菜单按钮的触摸结束事件
+ */
+const handleMenuTouchEnd = () => {
+  cancelLongPress()
+}
+
 // 暴露方法给父组件使用
 defineExpose({
   loadCategories: categoriesStore.loadCategories,
@@ -367,6 +445,11 @@ onMounted(async () => {
     // 立即通知父组件分类数据已更新
     emit('category-updated', categories.value)
   }
+})
+
+// 组件卸载时清理拖拽相关资源
+onUnmounted(() => {
+  cleanup()
 })
 </script>
 
@@ -411,6 +494,59 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* 拖拽相关样式 */
+.category-list-container {
+  position: relative;
+}
+
+.drag-drop-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(25, 118, 210, 0.5);
+  z-index: 1000;
+  pointer-events: none;
+  animation: dragLinePulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes dragLinePulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+.category-wrapper {
+  position: relative;
+  transition: all 0.2s ease;
+
+  &.dragging {
+    opacity: 0.7;
+    transform: scale(1.02);
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.category-menu-btn {
+  transition: all 0.2s ease;
+
+  &.drag-handle {
+    background-color: #1976d2 !important;
+    color: white !important;
+    cursor: grabbing;
+
+    &:hover {
+      background-color: #1565c0 !important;
+    }
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .todo-count-item {

@@ -1,6 +1,7 @@
 // UI 状态管理相关的 composables
 export { useNotification } from './useNotification'
 export { useDialog, useMultipleDialogs } from './useDialog'
+export { useDragSort } from './useDragSort'
 
 /**
  * Composables 使用指南
@@ -13,6 +14,7 @@ export { useDialog, useMultipleDialogs } from './useDialog'
  * - useNotification: 全局消息通知管理
  * - useDialog: 弹窗状态管理
  * - useMultipleDialogs: 多个弹窗的状态管理
+ * - useDragSort: 拖拽排序交互管理
  * 
  * 使用示例：
  * import { useNotification } from '@/composables'

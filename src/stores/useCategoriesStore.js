@@ -133,6 +133,20 @@ export const useCategoriesStore = defineStore('categories', () => {
     }
   }
 
+  // 拖拽排序分类
+  const reorderCategoriesByDrag = async (categoryId, targetIndex) => {
+    try {
+      const success = await CategoryService.reorderByDrag(categoryId, targetIndex)
+      if (success) {
+        await loadCategories()
+      }
+      return success
+    } catch (error) {
+      console.error('Reorder categories by drag error:', error)
+      throw error
+    }
+  }
+
   // 重置状态
   const resetState = () => {
     categories.value = []
@@ -156,6 +170,7 @@ export const useCategoriesStore = defineStore('categories', () => {
     updateCategory,
     deleteCategory,
     moveCategoryOrder,
+    reorderCategoriesByDrag,
     resetState,
   }
 })
