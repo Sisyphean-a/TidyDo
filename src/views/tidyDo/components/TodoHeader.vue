@@ -215,7 +215,7 @@ const handleDeleteTodo = async (item) => {
 .view-switcher {
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background: white;
+  background: #EEEEEE;
 }
 
 .view-switcher .v-btn-toggle__selected {
