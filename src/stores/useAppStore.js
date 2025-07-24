@@ -177,14 +177,17 @@ export const useAppStore = defineStore('app', () => {
 
   // 设置视图模式
   const setViewMode = (mode) => {
-    if (mode === 'table' || mode === 'timeline') {
+    if (mode === 'table' || mode === 'timeline' || mode === 'calendar') {
       viewMode.value = mode
     }
   }
 
-  // 切换视图模式
+  // 切换视图模式（支持三个视图的循环切换）
   const toggleViewMode = () => {
-    viewMode.value = viewMode.value === 'table' ? 'timeline' : 'table'
+    const modes = ['table', 'timeline', 'calendar']
+    const currentIndex = modes.indexOf(viewMode.value)
+    const nextIndex = (currentIndex + 1) % modes.length
+    viewMode.value = modes[nextIndex]
   }
 
   // 重置应用状态

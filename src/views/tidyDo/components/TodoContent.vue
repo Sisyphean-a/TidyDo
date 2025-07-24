@@ -112,7 +112,15 @@
 
       <!-- 时间线视图 -->
       <TodoTimeline
-        v-else
+        v-else-if="appStore.viewMode === 'timeline'"
+        :todos="appStore.currentTodos"
+        :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
+        :searchQuery="appStore.searchQuery"
+      />
+
+      <!-- 日历视图 -->
+      <TodoCalendar
+        v-else-if="appStore.viewMode === 'calendar'"
         :todos="appStore.currentTodos"
         :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
         :searchQuery="appStore.searchQuery"
@@ -147,6 +155,7 @@ import { computed } from 'vue'
 import TodoItem from './TodoItem.vue'
 import TableRow from './TableRow.vue'
 import TodoTimeline from './TodoTimeline.vue'
+import TodoCalendar from './TodoCalendar.vue'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'

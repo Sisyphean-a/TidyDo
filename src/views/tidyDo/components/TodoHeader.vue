@@ -74,13 +74,33 @@
       >
         新增待办
       </v-btn>
-      <v-btn
-        @click="appStore.toggleViewMode"
-        :prepend-icon="appStore.viewMode === 'table' ? 'mdi-timeline' : 'mdi-table'"
-        :color="appStore.viewMode === 'timeline' ? 'primary' : 'default'"
+      <!-- 视图切换按钮组 -->
+      <v-btn-toggle
+        :model-value="appStore.viewMode"
+        @update:model-value="appStore.setViewMode"
+        variant="outlined"
+        density="comfortable"
+        mandatory
       >
-        {{ appStore.viewMode === 'table' ? '时间线' : '表格' }}
-      </v-btn>
+        <v-btn
+          value="table"
+          prepend-icon="mdi-table"
+        >
+          表格
+        </v-btn>
+        <v-btn
+          value="timeline"
+          prepend-icon="mdi-timeline"
+        >
+          时间线
+        </v-btn>
+        <v-btn
+          value="calendar"
+          prepend-icon="mdi-calendar"
+        >
+          日历
+        </v-btn>
+      </v-btn-toggle>
       <v-btn
         @click="todosStore.toggleShowArchived"
         :prepend-icon="todosStore.showArchived ? 'mdi-eye-off' : 'mdi-eye'"
