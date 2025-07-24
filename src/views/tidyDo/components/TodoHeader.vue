@@ -30,6 +30,41 @@
 
     <v-spacer />
 
+    <!-- 视图切换组件 -->
+    <div class="view-switcher-container me-4">
+      <v-btn-toggle
+        :model-value="appStore.viewMode"
+        @update:model-value="appStore.setViewMode"
+        variant="outlined"
+        density="comfortable"
+        mandatory
+        class="view-switcher"
+        color="primary"
+      >
+        <v-btn
+          value="table"
+          prepend-icon="mdi-table"
+          class="view-btn"
+        >
+          <span class="d-none d-sm-inline">表格</span>
+        </v-btn>
+        <v-btn
+          value="timeline"
+          prepend-icon="mdi-timeline"
+          class="view-btn"
+        >
+          <span class="d-none d-sm-inline">时间线</span>
+        </v-btn>
+        <v-btn
+          value="calendar"
+          prepend-icon="mdi-calendar"
+          class="view-btn"
+        >
+          <span class="d-none d-sm-inline">日历</span>
+        </v-btn>
+      </v-btn-toggle>
+    </div>
+
     <!-- 搜索框 -->
     <div class="search-container me-4">
       <v-text-field
@@ -54,10 +89,11 @@
       </v-text-field>
     </div>
 
-    <!-- 工具按钮 -->
+    <!-- 功能按钮组 -->
     <v-btn-group
       variant="outlined"
       density="comfortable"
+      class="action-buttons"
     >
       <v-btn
         v-if="appStore.viewAllMode"
@@ -65,47 +101,21 @@
         @click="appStore.exitViewAllMode"
         color="warning"
       >
-        退出全部视图
+        <span class="d-none d-md-inline">退出全部视图</span>
       </v-btn>
       <v-btn
         prepend-icon="mdi-plus"
         @click="handleCreateTodoClick"
         :disabled="isCreateButtonDisabled"
+        color="primary"
       >
-        新增待办
+        <span class="d-none d-sm-inline">新增待办</span>
       </v-btn>
-      <!-- 视图切换按钮组 -->
-      <v-btn-toggle
-        :model-value="appStore.viewMode"
-        @update:model-value="appStore.setViewMode"
-        variant="outlined"
-        density="comfortable"
-        mandatory
-      >
-        <v-btn
-          value="table"
-          prepend-icon="mdi-table"
-        >
-          表格
-        </v-btn>
-        <v-btn
-          value="timeline"
-          prepend-icon="mdi-timeline"
-        >
-          时间线
-        </v-btn>
-        <v-btn
-          value="calendar"
-          prepend-icon="mdi-calendar"
-        >
-          日历
-        </v-btn>
-      </v-btn-toggle>
       <v-btn
         @click="todosStore.toggleShowArchived"
         :prepend-icon="todosStore.showArchived ? 'mdi-eye-off' : 'mdi-eye'"
       >
-        {{ todosStore.showArchived ? '隐藏归档' : '显示归档' }}
+        <span class="d-none d-md-inline">{{ todosStore.showArchived ? '隐藏归档' : '显示归档' }}</span>
       </v-btn>
       <v-btn
         icon="mdi-refresh"
@@ -196,6 +206,39 @@ const handleDeleteTodo = async (item) => {
 </script>
 
 <style scoped>
+/* 视图切换组件样式 */
+.view-switcher-container {
+  display: flex;
+  align-items: center;
+}
+
+.view-switcher {
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.view-switcher .v-btn-toggle__selected {
+  background: rgb(var(--v-theme-primary));
+  color: white;
+}
+
+.view-btn {
+  min-width: 44px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.view-btn .v-icon {
+  margin-right: 4px;
+}
+
+/* 搜索框样式 */
 .search-container {
   width: 300px;
 }
@@ -207,5 +250,73 @@ const handleDeleteTodo = async (item) => {
 .search-field .v-field__input {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+/* 功能按钮组样式 */
+.action-buttons {
+  border-radius: 6px;
+}
+
+.action-buttons .v-btn {
+  transition: all 0.2s ease;
+}
+
+.action-buttons .v-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* 响应式设计 */
+@media (max-width: 960px) {
+  .search-container {
+    width: 200px;
+  }
+
+  .search-field {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 600px) {
+  .view-switcher-container {
+    margin-right: 8px;
+  }
+
+  .search-container {
+    width: 150px;
+    margin-right: 8px;
+  }
+
+  .search-field {
+    max-width: 150px;
+  }
+
+  .view-btn {
+    min-width: 36px;
+    padding: 0 8px;
+  }
+
+  .action-buttons .v-btn {
+    min-width: 36px;
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
+    width: 120px;
+  }
+
+  .search-field {
+    max-width: 120px;
+  }
+
+  .view-btn {
+    min-width: 32px;
+    padding: 0 6px;
+  }
+
+  .view-btn .v-icon {
+    margin-right: 0;
+  }
 }
 </style>

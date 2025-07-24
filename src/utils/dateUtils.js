@@ -121,6 +121,52 @@ export const determineCalendarMode = (spanDays) => {
 }
 
 /**
+ * 根据屏幕宽度确定每行显示的月份数量
+ * @param {number} screenWidth - 屏幕宽度
+ * @returns {number} 每行显示的月份数量
+ */
+export const getMonthsPerRow = (screenWidth) => {
+  if (screenWidth >= 1200) {
+    return 3 // 桌面端：3个月一行
+  } else if (screenWidth >= 768) {
+    return 2 // 平板端：2个月一行
+  } else {
+    return 1 // 移动端：1个月一行
+  }
+}
+
+/**
+ * 计算多月布局的行列配置
+ * @param {number} totalMonths - 总月份数
+ * @param {number} monthsPerRow - 每行月份数
+ * @returns {Object} 包含行数和布局配置的对象
+ */
+export const calculateMultiMonthLayout = (totalMonths, monthsPerRow) => {
+  const rows = Math.ceil(totalMonths / monthsPerRow)
+  const layout = []
+
+  for (let row = 0; row < rows; row++) {
+    const startIndex = row * monthsPerRow
+    const endIndex = Math.min(startIndex + monthsPerRow, totalMonths)
+    const monthsInRow = endIndex - startIndex
+
+    layout.push({
+      row,
+      startIndex,
+      endIndex,
+      monthsInRow
+    })
+  }
+
+  return {
+    rows,
+    layout,
+    totalMonths,
+    monthsPerRow
+  }
+}
+
+/**
  * 生成日历网格数据
  * @param {Date} startDate - 开始日期
  * @param {number} monthsToShow - 要显示的月份数
