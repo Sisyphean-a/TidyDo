@@ -45,25 +45,48 @@
             </v-col>
           </v-row>
 
-          <!-- 筛选类设置 -->
+          <!-- 分类类型设置 -->
           <v-row>
             <v-col cols="12">
-              <v-switch
-                v-model="formData.isFilterCategory"
-                label="设为筛选类"
-                color="primary"
+              <div class="text-subtitle-2 mb-2">分类类型</div>
+              <v-radio-group
+                v-model="categoryType"
                 density="compact"
                 hide-details
-              />
-              <div class="text-caption text-grey mt-1">
-                筛选类用于显示符合特定条件的待办事项，不能手动添加新的待办
-              </div>
+              >
+                <v-radio
+                  value="regular"
+                  label="普通分类"
+                  color="primary"
+                />
+                <div class="text-caption text-grey ms-8 mb-2">
+                  标准的待办事项分类，支持完整的功能
+                </div>
+
+                <v-radio
+                  value="filter"
+                  label="筛选类"
+                  color="primary"
+                />
+                <div class="text-caption text-grey ms-8 mb-2">
+                  筛选类用于显示符合特定条件的待办事项，不能手动添加新的待办
+                </div>
+
+                <v-radio
+                  value="simple"
+                  label="简单Todo"
+                  color="primary"
+                />
+                <div class="text-caption text-grey ms-8">
+                  轻量级的四象限待办管理，只包含标题和状态
+                </div>
+              </v-radio-group>
             </v-col>
           </v-row>
 
           <!-- 筛选条件（仅在筛选类时显示） -->
           <v-expand-transition>
-            <div v-if="formData.isFilterCategory">
+            <div v-if="categoryType === 'filter'">
               <v-divider class="my-4" />
               
               <div class="text-subtitle-2 mb-3">筛选条件</div>
@@ -214,6 +237,7 @@ const formData = ref({
   name: '',
   icon: 'mdi-folder',
   isFilterCategory: false,
+  isSimpleTodo: false,
   filterConditions: {
     endDateFrom: null,
     endDateTo: null,
@@ -221,6 +245,28 @@ const formData = ref({
     categories: [],
     tags: [],
   },
+})
+
+// 分类类型计算属性
+const categoryType = computed({
+  get() {
+    if (formData.value.isSimpleTodo) return 'simple'
+    if (formData.value.isFilterCategory) return 'filter'
+    return 'regular'
+  },
+  set(value) {
+    formData.value.isFilterCategory = value === 'filter'
+    formData.value.isSimpleTodo = value === 'simple'
+
+    // 根据类型设置默认图标
+    if (value === 'filter' && formData.value.icon === 'mdi-folder') {
+      formData.value.icon = 'mdi-filter'
+    } else if (value === 'simple' && formData.value.icon === 'mdi-folder') {
+      formData.value.icon = 'mdi-view-grid'
+    } else if (value === 'regular' && (formData.value.icon === 'mdi-filter' || formData.value.icon === 'mdi-view-grid')) {
+      formData.value.icon = 'mdi-folder'
+    }
+  }
 })
 
 // 保存状态
@@ -247,6 +293,7 @@ const iconOptions = ref([
   { title: '紧急', value: 'mdi-alert' },
   { title: '重要', value: 'mdi-alert-circle' },
   { title: '筛选', value: 'mdi-filter' },
+  { title: '四象限', value: 'mdi-view-grid' },
 ])
 
 // 状态选项
@@ -272,6 +319,7 @@ watch(dialogVisible, async (newVal) => {
         name: props.category.name,
         icon: props.category.icon || 'mdi-folder',
         isFilterCategory: props.category.isFilterCategory || false,
+        isSimpleTodo: props.category.isSimpleTodo || false,
         filterConditions: props.category.filterConditions || {
           endDateFrom: null,
           endDateTo: null,
@@ -286,6 +334,7 @@ watch(dialogVisible, async (newVal) => {
         name: '',
         icon: 'mdi-folder',
         isFilterCategory: false,
+        isSimpleTodo: false,
         filterConditions: {
           endDateFrom: null,
           endDateTo: null,
@@ -327,6 +376,16 @@ const loadTags = async () => {
   }
 }
 
+// 根据分类类型获取图标
+const getIconForCategoryType = () => {
+  if (formData.value.isSimpleTodo && formData.value.icon === 'mdi-folder') {
+    return 'mdi-view-grid'
+  } else if (formData.value.isFilterCategory && formData.value.icon === 'mdi-folder') {
+    return 'mdi-filter'
+  }
+  return formData.value.icon
+}
+
 // 处理保存
 const handleSave = async () => {
   if (!formData.value.name) {
@@ -338,10 +397,9 @@ const handleSave = async () => {
     // 深度复制并确保数据可序列化
     const categoryData = {
       name: formData.value.name,
-      icon: formData.value.isFilterCategory && formData.value.icon === 'mdi-folder' 
-        ? 'mdi-filter' 
-        : formData.value.icon,
+      icon: getIconForCategoryType(),
       isFilterCategory: formData.value.isFilterCategory,
+      isSimpleTodo: formData.value.isSimpleTodo,
       filterConditions: formData.value.isFilterCategory ? {
         endDateFrom: formData.value.filterConditions.endDateFrom || null,
         endDateTo: formData.value.filterConditions.endDateTo || null,

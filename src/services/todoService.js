@@ -13,16 +13,18 @@ export const TODO_ITEMS_KEY = 'todo-items'
  * @param {string} icon - 分类图标，默认为'mdi-folder'
  * @param {boolean} isExpanded - 是否展开，默认为true
  * @param {boolean} isFilterCategory - 是否为筛选类，默认为false
+ * @param {boolean} isSimpleTodo - 是否为简单Todo大类，默认为false
  * @param {Object|null} filterConditions - 筛选条件，默认为null
  * @param {number} order - 排序值，默认为0
  * @returns {Object} 分类对象
  */
-export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, filterConditions = null, order = 0) => ({
+export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true, isFilterCategory = false, isSimpleTodo = false, filterConditions = null, order = 0) => ({
   id,
   name,
   icon,
   isExpanded,
   isFilterCategory, // 是否为筛选类
+  isSimpleTodo, // 是否为简单Todo大类
   order, // 排序字段
   filterConditions: filterConditions || {
     endDateFrom: null,
@@ -103,6 +105,7 @@ export class CategoryService {
       icon: category.icon || 'mdi-folder',
       isExpanded: category.isExpanded !== undefined ? category.isExpanded : true,
       isFilterCategory: category.isFilterCategory || false,
+      isSimpleTodo: category.isSimpleTodo || false,
       order: category.order !== undefined ? category.order : 0,
       filterConditions: category.filterConditions ? {
         endDateFrom: category.filterConditions.endDateFrom || null,
@@ -133,11 +136,19 @@ export class CategoryService {
 
   static async delete(id) {
     const categories = await this.getAll()
+    const categoryToDelete = categories.find((cat) => cat.id === id)
     const filtered = categories.filter((cat) => cat.id !== id)
     await set(TODO_CATEGORIES_KEY, filtered)
 
-    // 同时删除该分类下的所有todo项
-    await TodoItemService.deleteByCategoryId(id)
+    // 根据分类类型删除相应的todo项
+    if (categoryToDelete?.isSimpleTodo) {
+      // 删除简单Todo项
+      const { SimpleTodoService } = await import('./simpleTodoService')
+      await SimpleTodoService.deleteByCategoryId(id)
+    } else {
+      // 删除普通Todo项
+      await TodoItemService.deleteByCategoryId(id)
+    }
   }
 
   static async updateExpanded(id, isExpanded) {

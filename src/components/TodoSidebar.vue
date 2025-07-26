@@ -364,6 +364,7 @@ const handleSaveCategory = async (categoryData) => {
         name: categoryData.name,
         icon: categoryData.icon,
         isFilterCategory: categoryData.isFilterCategory,
+        isSimpleTodo: categoryData.isSimpleTodo,
         filterConditions: categoryData.filterConditions,
       }
       await categoriesStore.updateCategory(editingCategory.value, updates)
@@ -374,6 +375,7 @@ const handleSaveCategory = async (categoryData) => {
         categoryData.name,
         categoryData.icon,
         categoryData.isFilterCategory,
+        categoryData.isSimpleTodo,
         categoryData.filterConditions,
       )
       showMessage('创建分类成功', 'success')

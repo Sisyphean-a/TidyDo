@@ -14,7 +14,19 @@
       <p class="text-body-2 text-medium-emphasis">选择分类后可以查看和管理该分类下的待办事项</p>
     </v-container>
 
-    <!-- 空列表状态 -->
+    <!-- 简单Todo四象限视图 -->
+    <div
+      v-else-if="appStore.selectedCategory?.isSimpleTodo"
+      class="simple-todo-container"
+    >
+      <SimpleTodoQuadrant
+        :category-id="appStore.selectedCategoryId"
+        @update-todo="handleUpdateSimpleTodo"
+        @delete-todo="handleDeleteSimpleTodo"
+      />
+    </div>
+
+    <!-- 普通Todo空列表状态 -->
     <v-container
       v-else-if="appStore.currentTodos.length === 0"
       class="text-center pa-12"
@@ -60,7 +72,7 @@
       </template>
     </v-container>
 
-    <!-- Todo列表 -->
+    <!-- 普通Todo列表 -->
     <div
       v-else
       class="todo-list"
@@ -156,10 +168,12 @@ import TodoItem from './TodoItem.vue'
 import TableRow from './TableRow.vue'
 import TodoTimeline from './TodoTimeline.vue'
 import TodoCalendar from './TodoCalendar.vue'
+import SimpleTodoQuadrant from './SimpleTodoQuadrant.vue'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useSimpleTodosStore } from '@/stores/useSimpleTodosStore'
 import { useNotification } from '@/composables/useNotification'
 import { useDialog } from '@/composables/useDialog'
 
@@ -167,6 +181,7 @@ import { useDialog } from '@/composables/useDialog'
 const appStore = useAppStore()
 const todosStore = useTodosStore()
 const categoriesStore = useCategoriesStore()
+const simpleTodosStore = useSimpleTodosStore()
 
 // 通知和弹窗管理
 const { notification, showSuccess, showError } = useNotification()
@@ -271,6 +286,36 @@ const handleArchive = async (item) => {
   }
 }
 
+// 简单Todo相关处理方法
+const handleUpdateSimpleTodo = async (todo) => {
+  try {
+    await simpleTodosStore.updateSimpleTodo(todo)
+    showSuccess('更新简单Todo成功')
+  } catch (error) {
+    showError('更新简单Todo失败')
+  }
+}
+
+const handleDeleteSimpleTodo = async (todoId) => {
+  try {
+    await simpleTodosStore.deleteSimpleTodo(todoId)
+    showSuccess('删除简单Todo成功')
+  } catch (error) {
+    showError('删除简单Todo失败')
+  }
+}
+
+// 获取状态标签的辅助方法
+const getStatusLabel = (status) => {
+  const statusMap = {
+    todo: '待办事项',
+    doing: '进行中事项',
+    done: '已完成事项',
+    paused: '暂停事项'
+  }
+  return statusMap[status] || '待办事项'
+}
+
 // 暴露方法给父组件（保持向上兼容）
 defineExpose({
   handleCreateTodo
@@ -285,6 +330,11 @@ defineExpose({
 
 .todo-list {
   height: 100%;
+}
+
+.simple-todo-container {
+  height: 100%;
+  overflow: hidden;
 }
 
 .table-row {

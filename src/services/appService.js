@@ -2,6 +2,7 @@ import { ConfigService } from './configService'
 import { initializeDefaultData } from './todoService'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useTodosStore } from '@/stores/useTodosStore'
+import { useSimpleTodosStore } from '@/stores/useSimpleTodosStore'
 import { useAppStore } from '@/stores/useAppStore'
 import { globalConfig } from '@/composables/useConfig'
 import { withErrorHandling, ErrorTypes } from '@/utils/errorHandler'
@@ -77,12 +78,14 @@ export class AppService {
   static initializeStores = withErrorHandling(async () => {
     const categoriesStore = useCategoriesStore()
     const todosStore = useTodosStore()
+    const simpleTodosStore = useSimpleTodosStore()
     const appStore = useAppStore()
 
     // 并行加载基础数据
     await Promise.all([
       categoriesStore.loadCategories(),
-      todosStore.loadTodos()
+      todosStore.loadTodos(),
+      simpleTodosStore.loadSimpleTodos()
     ])
 
     // 基于加载的数据初始化应用状态
@@ -96,6 +99,7 @@ export class AppService {
   static async reloadAppData() {
     const categoriesStore = useCategoriesStore()
     const todosStore = useTodosStore()
+    const simpleTodosStore = useSimpleTodosStore()
     const appStore = useAppStore()
 
     // 清除配置缓存并重新加载
@@ -105,7 +109,8 @@ export class AppService {
     // 重新加载数据
     await Promise.all([
       categoriesStore.loadCategories(),
-      todosStore.loadTodos()
+      todosStore.loadTodos(),
+      simpleTodosStore.loadSimpleTodos()
     ])
 
     // 重新初始化应用状态

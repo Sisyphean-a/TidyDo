@@ -10,9 +10,11 @@ export const useCategoriesStore = defineStore('categories', () => {
   // Getters (计算属性)
   const allCategories = computed(() => categories.value)
 
-  const regularCategories = computed(() => categories.value.filter((cat) => !cat.isFilterCategory))
+  const regularCategories = computed(() => categories.value.filter((cat) => !cat.isFilterCategory && !cat.isSimpleTodo))
 
   const filterCategories = computed(() => categories.value.filter((cat) => cat.isFilterCategory))
+
+  const simpleTodoCategories = computed(() => categories.value.filter((cat) => cat.isSimpleTodo))
 
   const categoriesCount = computed(() => categories.value.length)
 
@@ -42,19 +44,21 @@ export const useCategoriesStore = defineStore('categories', () => {
     name,
     icon = 'mdi-folder-outline',
     isFilterCategory = false,
+    isSimpleTodo = false,
     filterConditions = null,
   ) => {
     try {
       // 获取当前分类数量，用于设置新分类的排序值
       const currentCategories = await CategoryService.getAll()
       const newOrder = currentCategories.length
-      
+
       const newCategory = createCategory(
         TodoItemService.generateId(),
         name,
         icon,
         true, // isExpanded
         isFilterCategory,
+        isSimpleTodo,
         filterConditions,
         newOrder, // order
       )
@@ -80,6 +84,10 @@ export const useCategoriesStore = defineStore('categories', () => {
           updates.isFilterCategory !== undefined
             ? updates.isFilterCategory
             : category.isFilterCategory || false,
+        isSimpleTodo:
+          updates.isSimpleTodo !== undefined
+            ? updates.isSimpleTodo
+            : category.isSimpleTodo || false,
         filterConditions: updates.filterConditions
           ? {
               endDateFrom: updates.filterConditions.endDateFrom || null,
@@ -161,6 +169,7 @@ export const useCategoriesStore = defineStore('categories', () => {
     // Getters
     regularCategories,
     filterCategories,
+    simpleTodoCategories,
     categoriesCount,
     getCategoryById,
 

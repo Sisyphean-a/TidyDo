@@ -30,8 +30,11 @@
 
     <v-spacer />
 
-    <!-- 视图切换组件 -->
-    <div class="view-switcher-container me-4">
+    <!-- 视图切换组件 (简单Todo大类时隐藏) -->
+    <div
+      v-if="!appStore.selectedCategory?.isSimpleTodo"
+      class="view-switcher-container me-4"
+    >
       <v-btn-toggle
         :model-value="appStore.viewMode"
         @update:model-value="appStore.setViewMode"
@@ -158,7 +161,8 @@ const todoEditDialog = useDialog()
 // 计算按钮禁用状态
 const isCreateButtonDisabled = computed(() => {
   const disabled = (!appStore.selectedCategory && !appStore.viewAllMode) ||
-    appStore.selectedCategory?.isFilterCategory  
+    appStore.selectedCategory?.isFilterCategory ||
+    appStore.selectedCategory?.isSimpleTodo  // 简单Todo大类时禁用创建按钮
   return disabled
 })
 
