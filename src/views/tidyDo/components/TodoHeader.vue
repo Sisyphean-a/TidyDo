@@ -225,7 +225,6 @@ const handleDeleteTodo = async (item) => {
 
 .view-btn {
   min-width: 44px;
-  border-radius: 6px;
   transition: all 0.2s ease;
 }
 

@@ -8,7 +8,7 @@
       <v-card-text class="d-flex align-center justify-space-between py-2">
         <div class="d-flex align-center">
           <v-icon class="me-2">mdi-calendar</v-icon>
-          <span class="text-body-2">时间维度：</span>
+          <span class="text-body-2">日期维度：</span>
         </div>
         <v-btn-toggle
           v-model="selectedTimeField"
@@ -16,18 +16,6 @@
           density="compact"
           mandatory
         >
-          <v-btn
-            value="endDate"
-            size="small"
-          >
-            <v-icon
-              start
-              size="small"
-            >
-              mdi-calendar-clock
-            </v-icon>
-            截止时间
-          </v-btn>
           <v-btn
             value="createdAt"
             size="small"
@@ -38,7 +26,19 @@
             >
               mdi-calendar-plus
             </v-icon>
-            创建时间
+            创建日期
+          </v-btn>
+          <v-btn
+            value="endDate"
+            size="small"
+          >
+            <v-icon
+              start
+              size="small"
+            >
+              mdi-calendar-clock
+            </v-icon>
+            截止日期
           </v-btn>
           <v-btn
             value="updatedAt"
@@ -50,7 +50,7 @@
             >
               mdi-calendar-edit
             </v-icon>
-            更新时间
+            更新日期
           </v-btn>
         </v-btn-toggle>
         <div class="d-flex align-center">
@@ -65,7 +65,7 @@
           <span class="text-caption text-medium-emphasis">
             {{ dateRangeInfo.hasValidDates ? 
               `${dateRangeInfo.validCount}/${dateRangeInfo.totalCount} 项有效` : 
-              '使用创建时间' }}
+              '使用创建日期' }}
           </span>
         </div>
       </v-card-text>
@@ -194,31 +194,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 图例 -->
-    <v-card
-      flat
-      class="mt-4"
-    >
-      <v-card-text class="py-2">
-        <div class="d-flex align-center justify-space-between">
-          <span class="text-body-2 text-medium-emphasis">数据密度：</span>
-          <div class="d-flex align-center">
-            <div
-              v-for="level in densityLevels"
-              :key="level.name"
-              class="d-flex align-center me-4"
-            >
-              <div
-                class="density-sample me-1"
-                :class="level.class"
-              ></div>
-              <span class="text-caption">{{ level.label }}</span>
-            </div>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
   </div>
 </template>
 
@@ -230,7 +205,6 @@ import {
   generateCalendarGrid,
   getDateKey,
   formatCalendarDate,
-  getDensityColor,
   getDensityLevel,
   aggregateTodosByDate,
   getMonthsPerRow,
@@ -600,7 +574,7 @@ onUnmounted(() => {
 }
 
 .todo-icon-symbol {
-  font-size: 8px !important;
+  font-size: 14px !important;
 }
 
 .todo-icon--pending {

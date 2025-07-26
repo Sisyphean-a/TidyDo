@@ -26,7 +26,7 @@
             >
               mdi-calendar-plus
             </v-icon>
-            创建时间
+            创建日期
           </v-btn>
           <v-btn
             value="endDate"
@@ -38,7 +38,7 @@
             >
               mdi-calendar-clock
             </v-icon>
-            截止时间
+            截止日期
           </v-btn>
           <v-btn
             value="updatedAt"
@@ -50,7 +50,7 @@
             >
               mdi-calendar-edit
             </v-icon>
-            更新时间
+            更新日期
           </v-btn>
         </v-btn-toggle>
         <v-btn
@@ -292,7 +292,7 @@ const timelineGroups = computed(() => {
     return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
   })
 
-  // 对无效数据按创建时间排序（作为备用排序）
+  // 对无效数据按创建日期排序（作为备用排序）
   const sortedInvalid = invalidItems.sort((a, b) => {
     const dateA = new Date(a.createdAt)
     const dateB = new Date(b.createdAt)
@@ -366,7 +366,7 @@ const isValidForMode = (item, mode) => {
       return item.updatedAt != null
     case 'createdAt':
     default:
-      return item.createdAt != null // 创建时间应该总是存在
+      return item.createdAt != null // 创建日期应该总是存在
   }
 }
 
@@ -387,7 +387,7 @@ const getItemDate = (item, mode) => {
 const getSpecialGroupLabel = (mode) => {
   switch (mode) {
     case 'endDate':
-      return '未设置截止时间'
+      return '未设置截止日期'
     case 'updatedAt':
       return '未更新'
     case 'createdAt':
@@ -400,9 +400,9 @@ const getSpecialGroupLabel = (mode) => {
 const getSpecialGroupTooltip = (mode) => {
   switch (mode) {
     case 'endDate':
-      return '这些待办事项没有设置截止时间，按创建时间排序'
+      return '这些待办事项没有设置截止日期，按创建日期排序'
     case 'updatedAt':
-      return '这些待办事项没有更新记录，按创建时间排序'
+      return '这些待办事项没有更新记录，按创建日期排序'
     case 'createdAt':
     default:
       return '其他待办事项'
@@ -442,7 +442,7 @@ const highlightSearchQuery = (text) => {
 // 监听排序模式变化，自动调整排序顺序
 watch(sortMode, (newMode) => {
   if (newMode === 'endDate') {
-    sortOrder.value = 'asc' // 截止时间默认升序（最近的在前）
+    sortOrder.value = 'asc' // 截止日期默认升序（最近的在前）
   } else {
     sortOrder.value = 'desc' // 其他时间默认降序（最新的在前）
   }
