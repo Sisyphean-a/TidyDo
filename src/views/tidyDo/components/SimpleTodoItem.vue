@@ -1,11 +1,8 @@
 <template>
   <div
     class="simple-todo-item"
-    :class="{ 'dragging': isDragging, 'editing': isEditing }"
+    :class="{ 'editing': isEditing }"
     :data-todo-id="todo.id"
-    :draggable="!isEditing"
-    @dragstart="handleDragStart"
-    @dragend="handleDragEnd"
     @mouseenter="showActions = true"
     @mouseleave="showActions = false"
   >
@@ -107,7 +104,6 @@ const emit = defineEmits(['update', 'delete'])
 const isEditing = ref(false)
 const editTitle = ref('')
 const showActions = ref(false)
-const isDragging = ref(false)
 const editInput = ref(null)
 
 // 计算属性
@@ -174,40 +170,7 @@ const handleDelete = () => {
   emit('delete', props.todo.id)
 }
 
-const handleDragStart = (event) => {
-  // 如果正在编辑，阻止拖拽
-  if (isEditing.value) {
-    event.preventDefault()
-    return
-  }
-
-  isDragging.value = true
-  event.dataTransfer.setData('text/plain', props.todo.id)
-  event.dataTransfer.effectAllowed = 'move'
-
-  // 创建自定义拖拽预览，跟随鼠标位置
-  const dragImage = event.target.cloneNode(true)
-  dragImage.style.transform = 'rotate(5deg)'
-  dragImage.style.opacity = '0.8'
-  dragImage.style.position = 'absolute'
-  dragImage.style.top = '-1000px'
-  document.body.appendChild(dragImage)
-
-  // 设置拖拽预览位置，使其跟随鼠标
-  const rect = event.target.getBoundingClientRect()
-  const offsetX = event.clientX - rect.left
-  const offsetY = event.clientY - rect.top
-  event.dataTransfer.setDragImage(dragImage, offsetX, offsetY)
-
-  // 清理临时元素
-  setTimeout(() => {
-    document.body.removeChild(dragImage)
-  }, 0)
-}
-
-const handleDragEnd = () => {
-  isDragging.value = false
-}
+// 拖拽功能现在由VueDraggablePlus处理，不再需要手动拖拽事件
 
 const formatDate = (dateString) => {
   const date = new Date(dateString)

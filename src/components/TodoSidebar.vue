@@ -20,26 +20,32 @@
 
       <!-- 分类列表 -->
       <div class="category-list-container">
-        <!-- 拖拽指示线 -->
-        <div
-          v-if="dragState.dropLinePosition?.visible"
-          class="drag-drop-line"
-          :style="{ top: `${dragState.dropLinePosition.top}px` }"
-        />
-
         <v-list
           density="compact"
           nav
         >
-          <!-- 分类项 -->
-          <div
-            v-for="(category, index) in categories"
-            :key="category.id"
-            :data-category-id="category.id"
-            :data-category-index="index"
-            class="category-wrapper"
-            :class="{ 'dragging': dragState.isDragging && dragState.draggedCategoryId === category.id }"
+          <!-- 使用VueDraggable包装分类项 -->
+          <VueDraggable
+            v-model="categories"
+            :animation="300"
+            :delay="500"
+            :delay-on-touch-start="true"
+            handle=".category-menu-btn"
+            ghost-class="drag-ghost"
+            chosen-class="drag-chosen"
+            drag-class="drag-dragging"
+            @start="onDragStart"
+            @end="onDragEnd"
           >
+            <!-- 分类项 -->
+            <div
+              v-for="(category, index) in categories"
+              :key="category.id"
+              :data-category-id="category.id"
+              :data-category-index="index"
+              class="category-wrapper"
+              :class="{ 'dragging': isDragging }"
+            >
             <v-list-item
               :prepend-icon="category.icon"
               :title="category.name"
@@ -62,7 +68,7 @@
                   <!-- 分类菜单 -->
                   <v-menu
                     location="bottom end"
-                    :disabled="dragState.isDragging"
+                    :disabled="isDragging"
                   >
                     <template v-slot:activator="{ props }">
                       <v-btn
@@ -71,13 +77,7 @@
                         variant="text"
                         v-bind="props"
                         @click.stop
-                        @mousedown="handleMenuMouseDown(category, $event)"
-                        @mouseup="handleMenuMouseUp"
-                        @mouseleave="handleMenuMouseLeave"
-                        @touchstart="handleMenuTouchStart(category, $event)"
-                        @touchend="handleMenuTouchEnd"
                         class="category-menu-btn"
-                        :class="{ 'drag-handle': dragState.isDragging && dragState.draggedCategoryId === category.id }"
                       >
                         <v-icon size="small">mdi-dots-vertical</v-icon>
                       </v-btn>
@@ -112,6 +112,7 @@
               </template>
             </v-list-item>
           </div>
+          </VueDraggable>
         </v-list>
       </div>
 
@@ -187,7 +188,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ConfigDialog from '@/model/ConfigDialog.vue'
 import CategoryEditDialog from '@/model/CategoryEditDialog.vue'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
-import { useDragSort } from '@/composables/useDragSort'
+import { VueDraggable } from 'vue-draggable-plus'
 
 const props = defineProps({
   selectedCategoryId: {
@@ -242,14 +243,41 @@ const showMessage = (message, color = 'success') => {
   }
 }
 
-// 拖拽排序功能
-const { dragState, startLongPress, cancelLongPress, cleanup } = useDragSort({
-  onReorder: async (categoryId, targetIndex) => {
-    await categoriesStore.reorderCategoriesByDrag(categoryId, targetIndex)
+// 拖拽排序功能 - 使用VueDraggablePlus
+const isDragging = ref(false)
+
+// 拖拽开始事件
+const onDragStart = () => {
+  isDragging.value = true
+  showMessage('拖拽模式已启动，拖动到目标位置后松开', 'info')
+}
+
+// 拖拽结束事件
+const onDragEnd = async () => {
+  isDragging.value = false
+  try {
+    // VueDraggablePlus已经自动更新了categories数组的顺序
+    // 现在需要更新每个分类的order字段并保存到存储
+    const updatedCategories = categories.value.map((category, index) => ({
+      ...category,
+      order: index,
+      updatedAt: new Date().toISOString()
+    }))
+
+    // 逐个保存更新后的分类
+    for (const category of updatedCategories) {
+      await categoriesStore.updateCategory(category, { order: category.order })
+    }
+
     emit('category-updated', categories.value)
-  },
-  onMessage: showMessage
-})
+    showMessage('分类排序已更新', 'success')
+  } catch (error) {
+    console.error('保存排序失败：', error)
+    showMessage('排序失败，请重试', 'error')
+    // 重新加载分类以恢复原始顺序
+    await categoriesStore.loadCategories()
+  }
+}
 
 // 创建分类
 const handleCreateCategory = async () => {
@@ -389,45 +417,7 @@ const handleSaveCategory = async (categoryData) => {
 }
 
 // ==================== 拖拽功能相关方法 ====================
-
-/**
- * 处理菜单按钮的鼠标按下事件
- * @param {Object} category - 分类对象
- * @param {MouseEvent} event - 鼠标事件
- */
-const handleMenuMouseDown = (category, event) => {
-  startLongPress(category, event)
-}
-
-/**
- * 处理菜单按钮的鼠标抬起事件
- */
-const handleMenuMouseUp = () => {
-  cancelLongPress()
-}
-
-/**
- * 处理菜单按钮的鼠标离开事件
- */
-const handleMenuMouseLeave = () => {
-  cancelLongPress()
-}
-
-/**
- * 处理菜单按钮的触摸开始事件
- * @param {Object} category - 分类对象
- * @param {TouchEvent} event - 触摸事件
- */
-const handleMenuTouchStart = (category, event) => {
-  startLongPress(category, event)
-}
-
-/**
- * 处理菜单按钮的触摸结束事件
- */
-const handleMenuTouchEnd = () => {
-  cancelLongPress()
-}
+// 拖拽功能现在由VueDraggablePlus处理，不再需要手动事件处理
 
 // 暴露方法给父组件使用
 defineExpose({
@@ -449,9 +439,9 @@ onMounted(async () => {
   }
 })
 
-// 组件卸载时清理拖拽相关资源
+// 组件卸载时清理资源
 onUnmounted(() => {
-  cleanup()
+  // VueDraggablePlus会自动处理清理，无需手动清理
 })
 </script>
 
@@ -503,22 +493,22 @@ onUnmounted(() => {
   position: relative;
 }
 
-.drag-drop-line {
-  position: fixed;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #1976d2, #42a5f5);
-  border-radius: 1px;
-  box-shadow: 0 0 4px rgba(25, 118, 210, 0.5);
-  z-index: 1000;
-  pointer-events: none;
-  animation: dragLinePulse 1s ease-in-out infinite alternate;
+// VueDraggablePlus 拖拽样式
+.drag-ghost {
+  opacity: 0.5;
+  background: #f5f5f5;
 }
 
-@keyframes dragLinePulse {
-  from { opacity: 0.8; }
-  to { opacity: 1; }
+.drag-chosen {
+  opacity: 0.8;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.drag-dragging {
+  opacity: 0.7;
+  transform: rotate(2deg);
+  z-index: 999;
 }
 
 .category-wrapper {

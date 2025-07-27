@@ -3,20 +3,15 @@
     <!-- 四象限网格布局 -->
     <div class="quadrant-grid">
       <!-- 待办象限 -->
-      <div 
-        class="quadrant quadrant-todo"
-        @drop="handleDrop($event, 'todo')"
-        @dragover.prevent
-        @dragenter.prevent
-      >
+      <div class="quadrant quadrant-todo">
         <div class="quadrant-header">
           <div class="quadrant-title">
             <v-icon :color="getStatusConfig('todo').textColor" class="me-2">
               {{ getStatusConfig('todo').icon }}
             </v-icon>
             <span class="text-h6">{{ getStatusConfig('todo').label }}</span>
-            <v-chip 
-              size="small" 
+            <v-chip
+              size="small"
               class="ms-2"
               :color="getStatusConfig('todo').textColor"
               variant="text"
@@ -33,14 +28,23 @@
           />
         </div>
         <div class="quadrant-content">
-          <SimpleTodoItem
-            v-for="todo in todosByStatus.todo"
-            :key="todo.id"
-            :todo="todo"
-            @update="handleUpdateTodo"
-            @delete="handleDeleteTodo"
-          />
-          <div 
+          <VueDraggable
+            v-model="todoList"
+            group="simple-todos"
+            :animation="300"
+            :disabled="false"
+            @end="handleDragEnd"
+            class="draggable-container"
+          >
+            <SimpleTodoItem
+              v-for="todo in todoList"
+              :key="todo.id"
+              :todo="todo"
+              @update="handleUpdateTodo"
+              @delete="handleDeleteTodo"
+            />
+          </VueDraggable>
+          <div
             v-if="todosByStatus.todo.length === 0"
             class="empty-state"
           >
@@ -51,20 +55,15 @@
       </div>
 
       <!-- 进行中象限 -->
-      <div 
-        class="quadrant quadrant-doing"
-        @drop="handleDrop($event, 'doing')"
-        @dragover.prevent
-        @dragenter.prevent
-      >
+      <div class="quadrant quadrant-doing">
         <div class="quadrant-header">
           <div class="quadrant-title">
             <v-icon :color="getStatusConfig('doing').textColor" class="me-2">
               {{ getStatusConfig('doing').icon }}
             </v-icon>
             <span class="text-h6">{{ getStatusConfig('doing').label }}</span>
-            <v-chip 
-              size="small" 
+            <v-chip
+              size="small"
               class="ms-2"
               :color="getStatusConfig('doing').textColor"
               variant="text"
@@ -81,14 +80,23 @@
           />
         </div>
         <div class="quadrant-content">
-          <SimpleTodoItem
-            v-for="todo in todosByStatus.doing"
-            :key="todo.id"
-            :todo="todo"
-            @update="handleUpdateTodo"
-            @delete="handleDeleteTodo"
-          />
-          <div 
+          <VueDraggable
+            v-model="doingList"
+            group="simple-todos"
+            :animation="300"
+            :disabled="false"
+            @end="handleDragEnd"
+            class="draggable-container"
+          >
+            <SimpleTodoItem
+              v-for="todo in doingList"
+              :key="todo.id"
+              :todo="todo"
+              @update="handleUpdateTodo"
+              @delete="handleDeleteTodo"
+            />
+          </VueDraggable>
+          <div
             v-if="todosByStatus.doing.length === 0"
             class="empty-state"
           >
@@ -99,20 +107,15 @@
       </div>
 
       <!-- 已完成象限 -->
-      <div 
-        class="quadrant quadrant-done"
-        @drop="handleDrop($event, 'done')"
-        @dragover.prevent
-        @dragenter.prevent
-      >
+      <div class="quadrant quadrant-done">
         <div class="quadrant-header">
           <div class="quadrant-title">
             <v-icon :color="getStatusConfig('done').textColor" class="me-2">
               {{ getStatusConfig('done').icon }}
             </v-icon>
             <span class="text-h6">{{ getStatusConfig('done').label }}</span>
-            <v-chip 
-              size="small" 
+            <v-chip
+              size="small"
               class="ms-2"
               :color="getStatusConfig('done').textColor"
               variant="text"
@@ -129,14 +132,23 @@
           />
         </div>
         <div class="quadrant-content">
-          <SimpleTodoItem
-            v-for="todo in todosByStatus.done"
-            :key="todo.id"
-            :todo="todo"
-            @update="handleUpdateTodo"
-            @delete="handleDeleteTodo"
-          />
-          <div 
+          <VueDraggable
+            v-model="doneList"
+            group="simple-todos"
+            :animation="300"
+            :disabled="false"
+            @end="handleDragEnd"
+            class="draggable-container"
+          >
+            <SimpleTodoItem
+              v-for="todo in doneList"
+              :key="todo.id"
+              :todo="todo"
+              @update="handleUpdateTodo"
+              @delete="handleDeleteTodo"
+            />
+          </VueDraggable>
+          <div
             v-if="todosByStatus.done.length === 0"
             class="empty-state"
           >
@@ -147,20 +159,15 @@
       </div>
 
       <!-- 暂停象限 -->
-      <div 
-        class="quadrant quadrant-paused"
-        @drop="handleDrop($event, 'paused')"
-        @dragover.prevent
-        @dragenter.prevent
-      >
+      <div class="quadrant quadrant-paused">
         <div class="quadrant-header">
           <div class="quadrant-title">
             <v-icon :color="getStatusConfig('paused').textColor" class="me-2">
               {{ getStatusConfig('paused').icon }}
             </v-icon>
             <span class="text-h6">{{ getStatusConfig('paused').label }}</span>
-            <v-chip 
-              size="small" 
+            <v-chip
+              size="small"
               class="ms-2"
               :color="getStatusConfig('paused').textColor"
               variant="text"
@@ -177,14 +184,23 @@
           />
         </div>
         <div class="quadrant-content">
-          <SimpleTodoItem
-            v-for="todo in todosByStatus.paused"
-            :key="todo.id"
-            :todo="todo"
-            @update="handleUpdateTodo"
-            @delete="handleDeleteTodo"
-          />
-          <div 
+          <VueDraggable
+            v-model="pausedList"
+            group="simple-todos"
+            :animation="300"
+            :disabled="false"
+            @end="handleDragEnd"
+            class="draggable-container"
+          >
+            <SimpleTodoItem
+              v-for="todo in pausedList"
+              :key="todo.id"
+              :todo="todo"
+              @update="handleUpdateTodo"
+              @delete="handleDeleteTodo"
+            />
+          </VueDraggable>
+          <div
             v-if="todosByStatus.paused.length === 0"
             class="empty-state"
           >
@@ -198,10 +214,11 @@
 </template>
 
 <script setup>
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useSimpleTodosStore } from '@/stores/useSimpleTodosStore'
 import { getSimpleTodoStatusConfig, SIMPLE_TODO_STATUSES } from '@/services/simpleTodoService'
 import SimpleTodoItem from './SimpleTodoItem.vue'
+import { VueDraggable } from 'vue-draggable-plus'
 
 // Props
 const props = defineProps({
@@ -220,7 +237,7 @@ const simpleTodosStore = useSimpleTodosStore()
 // 计算属性
 const todosByStatus = computed(() => {
   const todos = simpleTodosStore.getSimpleTodosByCategoryId(props.categoryId)
-  
+
   return {
     [SIMPLE_TODO_STATUSES.TODO]: todos.filter(t => t.status === SIMPLE_TODO_STATUSES.TODO),
     [SIMPLE_TODO_STATUSES.DOING]: todos.filter(t => t.status === SIMPLE_TODO_STATUSES.DOING),
@@ -228,6 +245,20 @@ const todosByStatus = computed(() => {
     [SIMPLE_TODO_STATUSES.PAUSED]: todos.filter(t => t.status === SIMPLE_TODO_STATUSES.PAUSED)
   }
 })
+
+// 为每个状态创建响应式数组，用于VueDraggable
+const todoList = ref([])
+const doingList = ref([])
+const doneList = ref([])
+const pausedList = ref([])
+
+// 监听todosByStatus的变化，更新响应式数组
+watch(todosByStatus, (newTodosByStatus) => {
+  todoList.value = [...newTodosByStatus.todo]
+  doingList.value = [...newTodosByStatus.doing]
+  doneList.value = [...newTodosByStatus.done]
+  pausedList.value = [...newTodosByStatus.paused]
+}, { immediate: true, deep: true })
 
 // 方法
 const getStatusConfig = (status) => {
@@ -263,16 +294,40 @@ const handleDeleteTodo = (todoId) => {
   emit('delete-todo', todoId)
 }
 
-const handleDrop = async (event, targetStatus) => {
-  event.preventDefault()
-  const todoId = event.dataTransfer.getData('text/plain')
-  
-  if (todoId) {
-    try {
-      await simpleTodosStore.updateSimpleTodoStatus(todoId, targetStatus)
-    } catch (error) {
-      console.error('Failed to update todo status:', error)
+// 拖拽结束事件处理 - 使用统一的处理函数
+const handleDragEnd = async (event) => {
+  try {
+    const { to, from, newIndex, oldIndex, item } = event
+
+    // 如果是跨象限拖拽（from !== to），需要更新todo状态
+    if (from !== to) {
+      // 从拖拽的DOM元素获取todo ID
+      const todoElement = item.querySelector('[data-todo-id]')
+      if (todoElement) {
+        const todoId = todoElement.getAttribute('data-todo-id')
+
+        // 确定目标状态 - 通过目标容器的父元素class确定
+        let targetStatus = null
+        const targetQuadrant = to.closest('.quadrant')
+
+        if (targetQuadrant.classList.contains('quadrant-todo')) {
+          targetStatus = SIMPLE_TODO_STATUSES.TODO
+        } else if (targetQuadrant.classList.contains('quadrant-doing')) {
+          targetStatus = SIMPLE_TODO_STATUSES.DOING
+        } else if (targetQuadrant.classList.contains('quadrant-done')) {
+          targetStatus = SIMPLE_TODO_STATUSES.DONE
+        } else if (targetQuadrant.classList.contains('quadrant-paused')) {
+          targetStatus = SIMPLE_TODO_STATUSES.PAUSED
+        }
+
+        if (targetStatus) {
+          console.log(`Updating todo ${todoId} to status ${targetStatus}`)
+          await simpleTodosStore.updateSimpleTodoStatus(todoId, targetStatus)
+        }
+      }
     }
+  } catch (error) {
+    console.error('Failed to handle drag end:', error)
   }
 }
 </script>
@@ -344,6 +399,13 @@ const handleDrop = async (event, targetStatus) => {
   flex: 1;
   padding: 8px;
   overflow-y: auto;
+}
+
+.draggable-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 50px;
 }
 
 .empty-state {
