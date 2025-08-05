@@ -65,6 +65,7 @@ export const createTodoItem = (
   priority, // low, medium, high
   status, // pending, completed, cancelled
   tags: [], // 扩展字段：标签
+  milestoneDate: null, // 扩展字段：节点日期
   endDate: null, // 扩展字段：结束日期（必填）
   assignee: null, // 扩展字段：分配人
   attachments: [], // 扩展字段：附件
@@ -252,6 +253,7 @@ export class TodoItemService {
       ...item,
       tags: Array.isArray(item.tags) ? [...item.tags] : [],
       attachments: Array.isArray(item.attachments) ? [...item.attachments] : [],
+      milestoneDate: item.milestoneDate || null, // 确保节点日期字段存在
       updatedAt: new Date().toISOString(),
     }
 

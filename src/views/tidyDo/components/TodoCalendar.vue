@@ -29,6 +29,18 @@
             创建日期
           </v-btn>
           <v-btn
+            value="milestoneDate"
+            size="small"
+          >
+            <v-icon
+              start
+              size="small"
+            >
+              mdi-calendar-star
+            </v-icon>
+            节点日期
+          </v-btn>
+          <v-btn
             value="endDate"
             size="small"
           >

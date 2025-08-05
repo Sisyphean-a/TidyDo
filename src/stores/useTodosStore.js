@@ -67,6 +67,7 @@ export const useTodosStore = defineStore('todos', () => {
       // 合并其他字段
       Object.assign(newItem, {
         tags: Array.isArray(todoData.tags) ? [...todoData.tags] : [],
+        milestoneDate: todoData.milestoneDate,
         endDate: todoData.endDate,
         assignee: todoData.assignee,
         attachments: Array.isArray(todoData.attachments) ? [...todoData.attachments] : [],

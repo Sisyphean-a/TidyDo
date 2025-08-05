@@ -77,6 +77,8 @@ export const calculateDateRange = (todos, timeField = 'endDate') => {
  */
 const getDateValue = (todo, timeField) => {
   switch (timeField) {
+    case 'milestoneDate':
+      return todo.milestoneDate
     case 'endDate':
       return todo.endDate || todo.dueDate // 兼容旧数据
     case 'updatedAt':

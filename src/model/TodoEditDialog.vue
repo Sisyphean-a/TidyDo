@@ -59,6 +59,17 @@
           />
 
           <v-row>
+            <!-- 节点日期 -->
+            <v-col cols="6">
+              <v-text-field
+                v-model="formData.milestoneDate"
+                label="节点日期"
+                type="date"
+                variant="outlined"
+                density="comfortable"
+              />
+            </v-col>
+
             <!-- 结束日期 -->
             <v-col cols="6">
               <v-text-field
@@ -69,7 +80,9 @@
                 density="comfortable"
               />
             </v-col>
+          </v-row>
 
+          <v-row>
             <!-- 状态 -->
             <v-col cols="6">
               <v-select
@@ -254,6 +267,7 @@ const formData = ref({
   description: '',
   priority: 'medium',
   status: 'pending',
+  milestoneDate: null,
   endDate: null,
   assignee: null,
   tags: [],
@@ -305,6 +319,7 @@ const initFormData = () => {
       description: props.item.description || '',
       priority: props.item.priority || 'medium',
       status: props.item.status || 'pending',
+      milestoneDate: props.item.milestoneDate || null,
       endDate: props.item.endDate || props.item.dueDate || null, // 兼容旧数据
       assignee: props.item.assignee || null,
       tags: [...(props.item.tags || [])],
@@ -318,6 +333,7 @@ const initFormData = () => {
       description: '',
       priority: 'medium',
       status: 'pending',
+      milestoneDate: null,
       endDate: null,
       assignee: null,
       tags: [],

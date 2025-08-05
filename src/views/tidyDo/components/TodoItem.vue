@@ -48,8 +48,20 @@
       </v-tooltip>
     </template>
 
-    <!-- 截止日期列 -->
+    <!-- 节点日期列 -->
     <template #column-2>
+      <v-btn
+        variant="text"
+        density="compact"
+        class="text-body-2 justify-center"
+        @click="copyToClipboard(formatDate(itemData.milestoneDate), '节点日期')"
+      >
+        {{ formatDate(itemData.milestoneDate) || '未设置' }}
+      </v-btn>
+    </template>
+
+    <!-- 截止日期列 -->
+    <template #column-3>
       <v-btn
         variant="text"
         density="compact"
@@ -69,7 +81,7 @@
     </template>
 
     <!-- 状态列 -->
-    <template #column-3>
+    <template #column-4>
       <v-menu>
         <template #activator="{ props: menuProps }">
           <v-chip
@@ -110,7 +122,7 @@
     </template>
 
     <!-- 分类列（仅在查看全部模式下显示） -->
-    <template #column-4 v-if="viewAllMode">
+    <template #column-5 v-if="viewAllMode">
       <v-btn
         variant="text"
         density="compact"
@@ -126,7 +138,7 @@
     </template>
 
     <!-- 操作列（查看全部模式） -->
-    <template #column-5 v-if="viewAllMode">
+    <template #column-6 v-if="viewAllMode">
       <v-btn-group
         variant="text"
         density="compact"
@@ -153,7 +165,7 @@
     </template>
 
     <!-- 操作列（普通模式） -->
-    <template #column-4 v-if="!viewAllMode">
+    <template #column-5 v-if="!viewAllMode">
       <v-btn-group
         variant="text"
         density="compact"

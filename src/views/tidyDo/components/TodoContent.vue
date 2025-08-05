@@ -84,8 +84,27 @@
           :columns="appStore.tableColumns"
           :isHeader="true"
         >
-          <!-- 截止日期列自定义表头（包含排序功能） -->
+          <!-- 节点日期列自定义表头（包含排序功能） -->
           <template #column-2>
+            <v-btn
+              variant="text"
+              density="compact"
+              class="text-body-2 font-weight-bold"
+              @click="appStore.toggleSort('milestoneDate')"
+            >
+              节点日期
+              <v-icon
+                v-if="appStore.sortBy === 'milestoneDate'"
+                size="small"
+                class="ms-1"
+              >
+                {{ appStore.sortOrder === 'asc' ? 'mdi-arrow-up' : 'mdi-arrow-down' }}
+              </v-icon>
+            </v-btn>
+          </template>
+
+          <!-- 截止日期列自定义表头（包含排序功能） -->
+          <template #column-3>
             <v-btn
               variant="text"
               density="compact"
@@ -190,6 +209,18 @@ const todoEditDialog = useDialog()
 // 计算排序后的待办事项
 const sortedTodos = computed(() => {
   const sorted = [...appStore.currentTodos].sort((a, b) => {
+    if (appStore.sortBy === 'milestoneDate') {
+      // 优先显示有节点日期的事项
+      if (!a.milestoneDate && !b.milestoneDate) return 0
+      if (!a.milestoneDate) return 1
+      if (!b.milestoneDate) return -1
+
+      const dateA = new Date(a.milestoneDate)
+      const dateB = new Date(b.milestoneDate)
+
+      return appStore.sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+    }
+
     if (appStore.sortBy === 'endDate') {
       // 优先显示有截止日期的事项
       if (!a.endDate && !b.endDate) return 0

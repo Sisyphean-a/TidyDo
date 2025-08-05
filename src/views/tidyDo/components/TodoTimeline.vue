@@ -29,6 +29,18 @@
             创建日期
           </v-btn>
           <v-btn
+            value="milestoneDate"
+            size="small"
+          >
+            <v-icon
+              start
+              size="small"
+            >
+              mdi-calendar-star
+            </v-icon>
+            节点日期
+          </v-btn>
+          <v-btn
             value="endDate"
             size="small"
           >
@@ -360,6 +372,8 @@ const separateItemsByMode = (items, mode) => {
 // 检查项目是否对当前排序模式有效
 const isValidForMode = (item, mode) => {
   switch (mode) {
+    case 'milestoneDate':
+      return item.milestoneDate != null
     case 'endDate':
       return item.endDate != null
     case 'updatedAt':
@@ -373,6 +387,8 @@ const isValidForMode = (item, mode) => {
 // 获取项目的有效日期（仅用于有效数据）
 const getItemDate = (item, mode) => {
   switch (mode) {
+    case 'milestoneDate':
+      return new Date(item.milestoneDate)
     case 'endDate':
       return new Date(item.endDate)
     case 'updatedAt':
@@ -386,6 +402,8 @@ const getItemDate = (item, mode) => {
 // 获取特殊分组的标签
 const getSpecialGroupLabel = (mode) => {
   switch (mode) {
+    case 'milestoneDate':
+      return '未设置节点日期'
     case 'endDate':
       return '未设置截止日期'
     case 'updatedAt':
@@ -441,8 +459,8 @@ const highlightSearchQuery = (text) => {
 
 // 监听排序模式变化，自动调整排序顺序
 watch(sortMode, (newMode) => {
-  if (newMode === 'endDate') {
-    sortOrder.value = 'asc' // 截止日期默认升序（最近的在前）
+  if (newMode === 'endDate' || newMode === 'milestoneDate') {
+    sortOrder.value = 'asc' // 截止日期和节点日期默认升序（最近的在前）
   } else {
     sortOrder.value = 'desc' // 其他时间默认降序（最新的在前）
   }
