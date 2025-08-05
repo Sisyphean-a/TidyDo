@@ -94,7 +94,7 @@ export const useAppStore = defineStore('app', () => {
     const isFilterOrViewAllMode = viewAllMode.value || selectedCategory.value?.isFilterCategory
     const columns = [
       { cols: 1, align: 'center', title: '编号' },
-      { cols: 3, align: 'left', title: '标题' },
+      { cols: 4, align: 'left', title: '标题' },
       { cols: 2, align: 'center', title: '节点日期' },
       { cols: 2, align: 'center', title: '截止日期' },
       { cols: isFilterOrViewAllMode ? 1 : 2, align: 'center', title: '状态' },
@@ -105,7 +105,7 @@ export const useAppStore = defineStore('app', () => {
       columns.push({ cols: 1, align: 'center', title: '分类' })
     }
 
-    columns.push({ cols: 2, align: 'center', title: '操作' })
+    columns.push({ cols: 1, align: 'center', title: '操作' })
 
     return columns
   })
