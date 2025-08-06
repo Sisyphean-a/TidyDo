@@ -160,12 +160,12 @@ export const useAppStore = defineStore('app', () => {
   // 处理排序切换
   const toggleSort = (field) => {
     if (sortBy.value === field) {
-      // 切换排序顺序
+      // 切换排序顺序（所有字段共享同一个排序方向）
       sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
     } else {
-      // 更改排序字段
+      // 更改排序字段，但保持当前的排序顺序不变
       sortBy.value = field
-      sortOrder.value = 'asc'
+      // 不改变 sortOrder，保持所有日期字段的排序方向一致
     }
   }
 

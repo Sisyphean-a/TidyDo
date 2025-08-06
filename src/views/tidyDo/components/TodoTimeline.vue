@@ -11,7 +11,7 @@
           <span class="text-body-2">排序依据：</span>
         </div>
         <v-btn-toggle
-          v-model="sortMode"
+          :model-value="appStore.sortBy"
           variant="outlined"
           density="compact"
           mandatory
@@ -19,6 +19,7 @@
           <v-btn
             value="createdAt"
             size="small"
+            @click="appStore.toggleSort('createdAt')"
           >
             <v-icon
               start
@@ -31,6 +32,7 @@
           <v-btn
             value="milestoneDate"
             size="small"
+            @click="appStore.toggleSort('milestoneDate')"
           >
             <v-icon
               start
@@ -43,6 +45,7 @@
           <v-btn
             value="endDate"
             size="small"
+            @click="appStore.toggleSort('endDate')"
           >
             <v-icon
               start
@@ -55,6 +58,7 @@
           <v-btn
             value="updatedAt"
             size="small"
+            @click="appStore.toggleSort('updatedAt')"
           >
             <v-icon
               start
@@ -66,11 +70,11 @@
           </v-btn>
         </v-btn-toggle>
         <v-btn
-          @click="toggleSortOrder"
-          :icon="sortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending'"
+          @click="appStore.toggleSort(appStore.sortBy)"
+          :icon="appStore.sortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending'"
           variant="outlined"
           density="compact"
-          :title="sortOrder === 'asc' ? '升序' : '降序'"
+          :title="appStore.sortOrder === 'asc' ? '升序' : '降序'"
         />
       </v-card-text>
     </v-card>
@@ -122,7 +126,7 @@
               {{ group.date }}
               <v-tooltip
                 v-if="group.isSpecial"
-                :text="getSpecialGroupTooltip(sortMode)"
+                :text="getSpecialGroupTooltip(appStore.sortBy)"
                 location="top"
               >
                 <template v-slot:activator="{ props }">
@@ -254,12 +258,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useAppStore } from '@/stores/useAppStore'
 import { useConfig } from '@/composables/useConfig'
 
 // Store 和 Composables
 const categoriesStore = useCategoriesStore()
+const appStore = useAppStore()
 const {
   getStatusColor,
   getStatusText,
@@ -286,35 +292,33 @@ const props = defineProps({
   },
 })
 
-// 本地状态
-const sortMode = ref('endDate')
-const sortOrder = ref('desc')
+// 本地状态（移除独立的排序状态，使用全局状态）
 
 // 计算属性
 const timelineGroups = computed(() => {
   if (!props.todos || props.todos.length === 0) return []
 
   // 根据排序模式分离有效数据和无效数据
-  const { validItems, invalidItems } = separateItemsByMode(props.todos, sortMode.value)
+  const { validItems, invalidItems } = separateItemsByMode(props.todos, appStore.sortBy)
 
   // 对有效数据进行排序
   const sortedValid = validItems.sort((a, b) => {
-    const dateA = getItemDate(a, sortMode.value)
-    const dateB = getItemDate(b, sortMode.value)
-    return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
+    const dateA = getItemDate(a, appStore.sortBy)
+    const dateB = getItemDate(b, appStore.sortBy)
+    return appStore.sortOrder === 'asc' ? dateA - dateB : dateB - dateA
   })
 
   // 对无效数据按创建日期排序（作为备用排序）
   const sortedInvalid = invalidItems.sort((a, b) => {
     const dateA = new Date(a.createdAt)
     const dateB = new Date(b.createdAt)
-    return sortOrder.value === 'asc' ? dateA - dateB : dateB - dateA
+    return appStore.sortOrder === 'asc' ? dateA - dateB : dateB - dateA
   })
 
   // 按日期分组有效数据
   const validGroups = {}
   sortedValid.forEach((item) => {
-    const date = getItemDate(item, sortMode.value)
+    const date = getItemDate(item, appStore.sortBy)
     const dateKey = formatDateKey(date)
 
     if (!validGroups[dateKey]) {
@@ -332,13 +336,13 @@ const timelineGroups = computed(() => {
 
   if (sortedInvalid.length > 0) {
     const specialGroup = {
-      date: getSpecialGroupLabel(sortMode.value),
+      date: getSpecialGroupLabel(appStore.sortBy),
       items: sortedInvalid,
       isSpecial: true,
     }
 
     // 根据排序顺序决定特殊分组的位置
-    if (sortOrder.value === 'asc') {
+    if (appStore.sortOrder === 'asc') {
       result.push(specialGroup) // 升序时放在最后
     } else {
       result.unshift(specialGroup) // 降序时放在最前
@@ -348,10 +352,7 @@ const timelineGroups = computed(() => {
   return result
 })
 
-// 方法
-const toggleSortOrder = () => {
-  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
-}
+// 方法（移除本地排序方法，使用全局状态管理）
 
 // 根据排序模式分离有效和无效数据
 const separateItemsByMode = (items, mode) => {
@@ -417,6 +418,8 @@ const getSpecialGroupLabel = (mode) => {
 // 获取特殊分组的工具提示
 const getSpecialGroupTooltip = (mode) => {
   switch (mode) {
+    case 'milestoneDate':
+      return '这些待办事项没有设置节点日期，按创建日期排序'
     case 'endDate':
       return '这些待办事项没有设置截止日期，按创建日期排序'
     case 'updatedAt':
@@ -457,14 +460,7 @@ const highlightSearchQuery = (text) => {
   return text.replace(regex, '<mark class="search-highlight">$1</mark>')
 }
 
-// 监听排序模式变化，自动调整排序顺序
-watch(sortMode, (newMode) => {
-  if (newMode === 'endDate' || newMode === 'milestoneDate') {
-    sortOrder.value = 'asc' // 截止日期和节点日期默认升序（最近的在前）
-  } else {
-    sortOrder.value = 'desc' // 其他时间默认降序（最新的在前）
-  }
-})
+// 排序逻辑现在由 AppStore 统一管理，无需本地监听
 
 // 组件初始化
 onMounted(async () => {

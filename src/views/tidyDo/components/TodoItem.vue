@@ -54,9 +54,17 @@
         variant="text"
         density="compact"
         class="text-body-2 justify-center"
+        :class="{ 'text-error': isMilestoneOverdue }"
         @click="copyToClipboard(formatDate(itemData.milestoneDate), '节点日期')"
       >
         {{ formatDate(itemData.milestoneDate) || '未设置' }}
+        <span
+          v-if="!isMilestoneOverdue && itemData.milestoneDate"
+          class="ms-1"
+          :class="getMilestoneRemainingDaysClass"
+        >
+          ({{ getMilestoneRemainingDays }})
+        </span>
       </v-btn>
     </template>
 
@@ -283,6 +291,44 @@ const getRemainingDaysClass = computed(() => {
   endDate.setHours(0, 0, 0, 0)
   today.setHours(0, 0, 0, 0)
   const diffTime = endDate - today
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  if (diffDays <= 0) return 'text-error'
+  if (diffDays <= 3) return 'text-warning'
+  return 'text-success'
+})
+
+// 计算节点日期是否过期
+const isMilestoneOverdue = computed(() => {
+  if (!props.itemData.milestoneDate) return false
+  const milestoneDate = new Date(props.itemData.milestoneDate)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return milestoneDate < today && props.itemData.status !== 'completed'
+})
+
+// 计算节点日期剩余天数
+const getMilestoneRemainingDays = computed(() => {
+  if (!props.itemData.milestoneDate) return ''
+  const milestoneDate = new Date(props.itemData.milestoneDate)
+  const today = new Date()
+  // 将时间部分设置为0，只比较日期
+  milestoneDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  const diffTime = milestoneDate - today
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return '已过期'
+  return diffDays > 0 ? `${diffDays}天` : '今天'
+})
+
+// 根据节点日期剩余天数获取样式类
+const getMilestoneRemainingDaysClass = computed(() => {
+  if (!props.itemData.milestoneDate) return ''
+  const milestoneDate = new Date(props.itemData.milestoneDate)
+  const today = new Date()
+  // 将时间部分设置为0，只比较日期
+  milestoneDate.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  const diffTime = milestoneDate - today
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   if (diffDays <= 0) return 'text-error'
   if (diffDays <= 3) return 'text-warning'
