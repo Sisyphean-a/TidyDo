@@ -253,24 +253,26 @@ const onDragStart = () => {
 }
 
 // 拖拽结束事件
-const onDragEnd = async () => {
+const onDragEnd = async (event) => {
   isDragging.value = false
   try {
     // VueDraggablePlus已经自动更新了categories数组的顺序
-    // 现在需要更新每个分类的order字段并保存到存储
-    const updatedCategories = categories.value.map((category, index) => ({
-      ...category,
-      order: index,
-      updatedAt: new Date().toISOString()
-    }))
+    // 获取拖拽的分类ID和新位置
+    const draggedCategoryId = event.item.dataset.categoryId
+    const newIndex = event.newIndex
 
-    // 逐个保存更新后的分类
-    for (const category of updatedCategories) {
-      await categoriesStore.updateCategory(category, { order: category.order })
+    if (draggedCategoryId && newIndex !== undefined) {
+      // 使用专门的拖拽排序方法
+      const success = await categoriesStore.reorderCategoriesByDrag(draggedCategoryId, newIndex)
+      if (success) {
+        emit('category-updated', categories.value)
+        showMessage('分类排序已更新', 'success')
+      } else {
+        showMessage('排序失败，请重试', 'error')
+        // 重新加载分类以恢复原始顺序
+        await categoriesStore.loadCategories()
+      }
     }
-
-    emit('category-updated', categories.value)
-    showMessage('分类排序已更新', 'success')
   } catch (error) {
     console.error('保存排序失败：', error)
     showMessage('排序失败，请重试', 'error')

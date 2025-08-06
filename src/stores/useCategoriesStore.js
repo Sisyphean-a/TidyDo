@@ -88,6 +88,7 @@ export const useCategoriesStore = defineStore('categories', () => {
           updates.isSimpleTodo !== undefined
             ? updates.isSimpleTodo
             : category.isSimpleTodo || false,
+        order: updates.order !== undefined ? updates.order : category.order, // 添加 order 字段处理
         filterConditions: updates.filterConditions
           ? {
               endDateFrom: updates.filterConditions.endDateFrom || null,

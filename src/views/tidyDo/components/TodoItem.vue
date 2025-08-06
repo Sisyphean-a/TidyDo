@@ -6,25 +6,33 @@
   >
     <!-- 编号列 -->
     <template #column-0>
-      <v-btn
-        variant="text"
-        density="compact"
-        class="text-body-2 justify-center"
-        @click="copyToClipboard(getDisplayNumber(), '编号')"
+      <v-tooltip
+        :text="itemData.description || '暂无描述'"
+        location="bottom"
       >
-        <v-icon
-          size="small"
-          class="me-1"
-          >mdi-hashtag</v-icon
-        >
-        {{ getDisplayNumber() }}
-      </v-btn>
+        <template #activator="{ props: tooltipProps }">
+          <v-btn
+            v-bind="tooltipProps"
+            variant="text"
+            density="compact"
+            class="text-body-2 justify-center"
+            @click="copyToClipboard(getDisplayNumber(), '编号')"
+          >
+            <v-icon
+              size="small"
+              class="me-1"
+              >mdi-hashtag</v-icon
+            >
+            {{ getDisplayNumber() }}
+          </v-btn>
+        </template>
+      </v-tooltip>
     </template>
 
     <!-- 标题列 -->
     <template #column-1>
       <v-tooltip
-        :text="itemData.description || '暂无描述'"
+        :text="itemData.title"
         location="bottom"
       >
         <template #activator="{ props: tooltipProps }">
@@ -39,7 +47,7 @@
             <v-icon :color="getStatusColor(itemData.status)">
               {{ getPriorityIcon(itemData.priority) }}
             </v-icon>
-            <span 
+            <span
               class="text-truncate"
               v-html="highlightText(itemData.title, searchQuery)"
             ></span>
