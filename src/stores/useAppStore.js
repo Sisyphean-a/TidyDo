@@ -51,6 +51,16 @@ export const useAppStore = defineStore('app', () => {
               return false
           }
 
+          // 节点日期范围过滤
+          if (filterConditions.milestoneDateFrom || filterConditions.milestoneDateTo) {
+            if (!todo.milestoneDate) return false
+            const todoMilestoneDate = new Date(todo.milestoneDate)
+            if (filterConditions.milestoneDateFrom && todoMilestoneDate < new Date(filterConditions.milestoneDateFrom))
+              return false
+            if (filterConditions.milestoneDateTo && todoMilestoneDate > new Date(filterConditions.milestoneDateTo))
+              return false
+          }
+
           // 状态过滤
           if (filterConditions.statuses?.length > 0) {
             if (!filterConditions.statuses.includes(todo.status)) return false

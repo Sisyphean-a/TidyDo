@@ -14,7 +14,7 @@ export const TODO_ITEMS_KEY = 'todo-items'
  * @param {boolean} isExpanded - 是否展开，默认为true
  * @param {boolean} isFilterCategory - 是否为筛选类，默认为false
  * @param {boolean} isSimpleTodo - 是否为简单Todo大类，默认为false
- * @param {Object|null} filterConditions - 筛选条件，默认为null
+ * @param {Object|null} filterConditions - 筛选条件，包含截止日期范围、节点日期范围、状态、分类、标签等筛选字段，默认为null
  * @param {number} order - 排序值，默认为0
  * @returns {Object} 分类对象
  */
@@ -29,6 +29,8 @@ export const createCategory = (id, name, icon = 'mdi-folder', isExpanded = true,
   filterConditions: filterConditions || {
     endDateFrom: null,
     endDateTo: null,
+    milestoneDateFrom: null,
+    milestoneDateTo: null,
     statuses: [],
     categories: [],
     tags: [],

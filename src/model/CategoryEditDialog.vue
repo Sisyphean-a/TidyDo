@@ -92,6 +92,7 @@
               <div class="text-subtitle-2 mb-3">筛选条件</div>
 
               <!-- 截止日期范围 -->
+              <div class="text-body-2 mb-2 text-medium-emphasis">截止日期范围</div>
               <v-row>
                 <v-col cols="12" sm="6">
                   <v-text-field
@@ -106,6 +107,31 @@
                 <v-col cols="12" sm="6">
                   <v-text-field
                     v-model="formData.filterConditions.endDateTo"
+                    label="结束日期"
+                    type="date"
+                    variant="outlined"
+                    density="compact"
+                    clearable
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- 节点日期范围 -->
+              <div class="text-body-2 mb-2 mt-3 text-medium-emphasis">节点日期范围</div>
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.filterConditions.milestoneDateFrom"
+                    label="开始日期"
+                    type="date"
+                    variant="outlined"
+                    density="compact"
+                    clearable
+                  />
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="formData.filterConditions.milestoneDateTo"
                     label="结束日期"
                     type="date"
                     variant="outlined"
@@ -241,6 +267,8 @@ const formData = ref({
   filterConditions: {
     endDateFrom: null,
     endDateTo: null,
+    milestoneDateFrom: null,
+    milestoneDateTo: null,
     statuses: [],
     categories: [],
     tags: [],
@@ -323,6 +351,8 @@ watch(dialogVisible, async (newVal) => {
         filterConditions: props.category.filterConditions || {
           endDateFrom: null,
           endDateTo: null,
+          milestoneDateFrom: null,
+          milestoneDateTo: null,
           statuses: [],
           categories: [],
           tags: [],
@@ -338,6 +368,8 @@ watch(dialogVisible, async (newVal) => {
         filterConditions: {
           endDateFrom: null,
           endDateTo: null,
+          milestoneDateFrom: null,
+          milestoneDateTo: null,
           statuses: [],
           categories: [],
           tags: [],
@@ -403,12 +435,16 @@ const handleSave = async () => {
       filterConditions: formData.value.isFilterCategory ? {
         endDateFrom: formData.value.filterConditions.endDateFrom || null,
         endDateTo: formData.value.filterConditions.endDateTo || null,
+        milestoneDateFrom: formData.value.filterConditions.milestoneDateFrom || null,
+        milestoneDateTo: formData.value.filterConditions.milestoneDateTo || null,
         statuses: [...(formData.value.filterConditions.statuses || [])],
         categories: [...(formData.value.filterConditions.categories || [])],
         tags: [...(formData.value.filterConditions.tags || [])],
       } : {
         endDateFrom: null,
         endDateTo: null,
+        milestoneDateFrom: null,
+        milestoneDateTo: null,
         statuses: [],
         categories: [],
         tags: [],
