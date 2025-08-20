@@ -31,6 +31,11 @@
 │                                  │ │ SimpleTodoQuadrant  │ │ │
 │                                  │ │ SimpleTodoItem      │ │ │
 │                                  │ └─────────────────────┘ │ │
+│                                  │ ┌─────────────────────┐ │ │
+│                                  │ │     数据报表视图    │ │ │
+│                                  │ │    TodoReport       │ │ │
+│                                  │ │  ECharts图表组件    │ │ │
+│                                  │ └─────────────────────┘ │ │
 │                                  └─────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
                             ↕ Props & Events
@@ -58,6 +63,10 @@
 │  │                SimpleTodosStore                         │ │
 │  │  - 简单Todo管理  - 四象限状态  - VueDraggablePlus拖拽  │ │
 │  └─────────────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │                  ReportStore                        │ │
+│  │  - 报表数据管理  - 统计分析  - 图表状态  - 导出功能  │ │
+│  └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                             ↕ Business Logic
 ┌─────────────────────────────────────────────────────────────┐
@@ -75,6 +84,10 @@
 │  │ - 独立数据存储      │ │ - 数据迁移                       │ │
 │  │ - 状态配置管理      │ │                                  │ │
 │  └─────────────────────┘ └──────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                   ReportService                         │ │
+│  │ - 数据统计分析  - 多维度统计  - 时间趋势  - 综合报表   │ │
+│  └─────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                             ↕ Data Operations
 ┌─────────────────────────────────────────────────────────────┐
@@ -148,11 +161,13 @@ TidyDo/
 │   │   ├── appService.js   # 应用初始化服务
 │   │   ├── configService.js # 配置数据服务
 │   │   ├── dataService.js  # 数据备份恢复服务
+│   │   ├── reportService.js # 报表数据服务
 │   │   ├── simpleTodoService.js # 简单Todo数据服务
 │   │   └── todoService.js  # 待办事项数据服务
 │   ├── stores/             # 状态管理 (业务逻辑)
 │   │   ├── useAppStore.js        # 应用全局状态
 │   │   ├── useCategoriesStore.js # 分类管理
+│   │   ├── useReportStore.js     # 报表数据管理
 │   │   ├── useSimpleTodosStore.js # 简单Todo管理
 │   │   └── useTodosStore.js      # 待办事项管理
 │   ├── utils/              # 工具函数
@@ -168,6 +183,7 @@ TidyDo/
 │   │       │   ├── TodoContent.vue        # 内容区域
 │   │       │   ├── TodoHeader.vue         # 头部工具栏
 │   │       │   ├── TodoItem.vue           # 待办项
+│   │       │   ├── TodoReport.vue         # 报表视图
 │   │       │   └── TodoTimeline.vue       # 时间线视图
 │   │       └── index.vue            # 主页面
 │   ├── App.vue             # 根组件
@@ -195,6 +211,7 @@ TidyDo/
 - `todoService.js` - 分类和待办事项的CRUD操作
 - `simpleTodoService.js` - 简单Todo的CRUD操作和状态管理
 - `dataService.js` - 数据导入导出和备份恢复
+- `reportService.js` - 数据统计分析和报表生成
 
 #### 🔄 Stores (状态管理层)
 
@@ -204,6 +221,7 @@ TidyDo/
 - `useCategoriesStore.js` - 分类数据管理和操作
 - `useTodosStore.js` - 待办事项数据管理和操作
 - `useSimpleTodosStore.js` - 简单Todo数据管理和四象限状态
+- `useReportStore.js` - 报表数据管理和图表状态
 
 #### 🎨 Composables (组合式函数层)
 
@@ -309,6 +327,25 @@ TidyDo/
   static downloadAsJSON(data, filename)  // 下载为JSON文件
   ```
 
+#### ReportService
+
+**数据统计分析和报表生成服务**
+
+- **核心特性**:
+  - 📊 多维度数据统计（项目数量、状态分布、完成情况）
+  - 📈 时间趋势分析（创建趋势、完成趋势）
+  - 🎯 优先级分布统计
+  - 📋 综合报表数据生成
+- **关键方法**:
+  ```javascript
+  static async getProjectCountStats()        // 获取项目数量统计
+  static async getStatusDistributionStats()  // 获取状态分布统计
+  static async getCompletionStats()          // 获取完成情况统计
+  static async getTimeTrendStats(days)       // 获取时间趋势统计
+  static async getPriorityDistributionStats() // 获取优先级分布统计
+  static async getComprehensiveReport(options) // 获取综合报表数据
+  ```
+
 ### 📊 Stores Layer (状态管理层)
 
 #### AppStore
@@ -372,6 +409,34 @@ TidyDo/
   updateTodo(todo) // 更新待办事项
   updateTodoStatus(id, status) // 更新待办状态
   toggleTodoArchived(todo) // 切换归档状态
+  ```
+
+#### ReportStore
+
+**报表数据管理和图表状态**
+
+- **核心状态**:
+  - `reportData` - 报表数据
+  - `isLoading` - 加载状态
+  - `lastUpdated` - 最后更新时间
+  - `trendDays` - 趋势分析天数
+  - `autoRefresh` - 自动刷新开关
+- **计算属性**:
+  - `projectCountStats` - 项目数量统计
+  - `statusDistributionStats` - 状态分布统计
+  - `completionStats` - 完成情况统计
+  - `timeTrendStats` - 时间趋势统计
+  - `priorityDistributionStats` - 优先级分布统计
+  - `hasData` - 是否有数据
+  - `isDataStale` - 数据是否过期
+- **关键方法**:
+  ```javascript
+  loadReportData(options) // 加载报表数据
+  refreshReportData() // 刷新报表数据
+  setTrendDays(days) // 设置趋势分析天数
+  startAutoRefresh(intervalMinutes) // 启动自动刷新
+  stopAutoRefresh() // 停止自动刷新
+  exportReportData(format) // 导出报表数据
   ```
 
 ### 🎨 Composables Layer (组合式函数层)
@@ -474,9 +539,10 @@ TidyDo/
 #### 核心组件特性
 
 - **TodoSidebar**: 侧边栏导航，支持分类管理和长按拖拽排序（横线指示插入位置）
-- **TodoHeader**: 头部工具栏，集成搜索、创建和视图切换
-- **TodoContent**: 内容区域，支持表格和时间线两种视图模式
+- **TodoHeader**: 头部工具栏，集成搜索、创建和视图切换（支持四种视图模式）
+- **TodoContent**: 内容区域，支持表格、时间线、日历和报表四种视图模式
 - **TodoItem**: 待办项组件，支持快速状态切换和操作
+- **TodoReport**: 报表视图组件，集成ECharts图表，提供数据可视化分析
 
 #### 弹窗组件
 
@@ -666,10 +732,11 @@ console.log('配置初始化状态:', isInitialized.value)
   - ✅ 数据导入导出和备份恢复
 - **用户体验**:
   - ✅ 响应式设计，完美适配移动端
-  - ✅ 三视图模式：表格、时间线、日历视图
+  - ✅ 四视图模式：表格、时间线、日历、报表视图
   - ✅ 四时间维度：创建日期、节点日期、截止日期、更新日期
   - ✅ 拖拽排序和快速操作
   - ✅ 实时搜索和高亮显示
+  - ✅ 数据可视化分析和报表功能
 - **技术架构**:
   - ✅ 优雅的分层架构设计
   - ✅ 统一的错误处理机制
@@ -688,4 +755,4 @@ console.log('配置初始化状态:', isInitialized.value)
   - 🔄 提醒和通知系统
   - 🔄 数据云端同步
   - 🔄 团队协作功能
-  - 🔄 统计和报表功能
+  - ✅ 统计和报表功能

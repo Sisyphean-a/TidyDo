@@ -156,6 +156,11 @@
         :viewAllMode="appStore.viewAllMode || appStore.selectedCategory?.isFilterCategory"
         :searchQuery="appStore.searchQuery"
       />
+
+      <!-- 报表视图 (只在查看全部模式下显示) -->
+      <TodoReport
+        v-else-if="appStore.viewMode === 'report' && appStore.viewAllMode"
+      />
     </div>
 
     <!-- 编辑弹窗 -->
@@ -187,6 +192,7 @@ import TodoItem from './TodoItem.vue'
 import TableRow from './TableRow.vue'
 import TodoTimeline from './TodoTimeline.vue'
 import TodoCalendar from './TodoCalendar.vue'
+import TodoReport from './TodoReport.vue'
 import SimpleTodoQuadrant from './SimpleTodoQuadrant.vue'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 import { useAppStore } from '@/stores/useAppStore'

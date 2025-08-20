@@ -7,7 +7,7 @@ export const useAppStore = defineStore('app', () => {
   // 状态
   const selectedCategoryId = ref(null)
   const viewAllMode = ref(false) // 查看全部模式
-  const viewMode = ref('table') // 视图模式: 'table' | 'timeline'
+  const viewMode = ref('table') // 视图模式: 'table' | 'timeline' | 'calendar' | 'report'
   const sortBy = ref('endDate') // 当前排序字段
   const sortOrder = ref('asc') // 排序顺序: 'asc' | 'desc'
   const searchQuery = ref('') // 搜索查询
@@ -188,14 +188,14 @@ export const useAppStore = defineStore('app', () => {
 
   // 设置视图模式
   const setViewMode = (mode) => {
-    if (mode === 'table' || mode === 'timeline' || mode === 'calendar') {
+    if (mode === 'table' || mode === 'timeline' || mode === 'calendar' || mode === 'report') {
       viewMode.value = mode
     }
   }
 
-  // 切换视图模式（支持三个视图的循环切换）
+  // 切换视图模式（支持四个视图的循环切换）
   const toggleViewMode = () => {
-    const modes = ['table', 'timeline', 'calendar']
+    const modes = ['table', 'timeline', 'calendar', 'report']
     const currentIndex = modes.indexOf(viewMode.value)
     const nextIndex = (currentIndex + 1) % modes.length
     viewMode.value = modes[nextIndex]

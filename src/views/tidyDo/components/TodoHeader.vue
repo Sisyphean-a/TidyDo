@@ -65,6 +65,15 @@
         >
           <span class="d-none d-sm-inline">日历</span>
         </v-btn>
+        <!-- 报表视图 (只在查看全部模式下显示) -->
+        <v-btn
+          v-if="appStore.viewAllMode"
+          value="report"
+          prepend-icon="mdi-chart-box"
+          class="view-btn"
+        >
+          <span class="d-none d-sm-inline">报表</span>
+        </v-btn>
       </v-btn-toggle>
     </div>
 
