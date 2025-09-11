@@ -159,6 +159,7 @@ TidyDo/
 │   │   └── index.js
 │   ├── services/           # 服务层 (数据操作)
 │   │   ├── appService.js   # 应用初始化服务
+│   │   ├── autoBackupService.js # 自主备份服务
 │   │   ├── configService.js # 配置数据服务
 │   │   ├── dataService.js  # 数据备份恢复服务
 │   │   ├── reportService.js # 报表数据服务
@@ -325,6 +326,25 @@ TidyDo/
   static async exportAllData()           // 导出所有数据
   static async importData(data, options) // 导入数据
   static downloadAsJSON(data, filename)  // 下载为JSON文件
+  ```
+
+#### AutoBackupService
+
+**自主备份服务**
+
+- **核心特性**:
+  - 🔄 应用启动时自动备份检查
+  - 📅 每日备份机制，避免重复备份
+  - 📁 可配置的备份目录路径
+  - 🛡️ 路径验证和状态管理
+- **关键方法**:
+  ```javascript
+  static async performAutoBackup()        // 执行自主备份检查
+  static async checkIfBackupNeeded()      // 检查是否需要备份
+  static async executeBackup()            // 执行备份操作
+  static validateBackupPath(path)         // 验证备份路径
+  static async getBackupStatus()          // 获取备份状态
+  static async manualBackup()             // 手动触发备份
   ```
 
 #### ReportService
