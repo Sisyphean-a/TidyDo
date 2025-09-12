@@ -1,5 +1,6 @@
 import { ConfigService } from './configService'
 import { DataService } from './dataService'
+import { DirectoryHandleService } from './directoryHandleService'
 import { withErrorHandling, ErrorTypes } from '@/utils/errorHandler'
 
 /**
@@ -107,7 +108,7 @@ export class AutoBackupService {
 
   /**
    * 执行备份操作
-   * @param {string} backupPath - 备份路径
+   * @param {string} backupPath - 备份路径（显示用）
    * @param {string} today - 今日日期
    * @returns {Promise<void>}
    */
@@ -118,13 +119,32 @@ export class AutoBackupService {
     // 生成备份文件名（与导出所有数据的文件名格式一致）
     const fileName = `tidydo-backup-${today}.json`
     
-    // 使用 DataService 的下载方法，但修改文件名
-    DataService.downloadAsJSON(exportData, fileName)
+    console.log(`💾 [AutoBackup] 开始备份到: ${backupPath}`)
     
-    console.log(`💾 [AutoBackup] 备份文件已生成: ${fileName}`)
-    console.log(`📁 [AutoBackup] 请将文件保存到: ${backupPath}`)
-    
-    // 可以考虑添加用户提示，告知备份文件已生成，需要手动保存到指定目录
+    try {
+      // 获取目录句柄
+      const { handle: directoryHandle } = await DirectoryHandleService.getDirectoryHandle('autoBackup')
+      
+      if (directoryHandle && await DirectoryHandleService.verifyPermission(directoryHandle)) {
+        // 使用现代API保存到指定目录
+        const success = await DataService.saveFileWithSystemAPI(exportData, fileName, directoryHandle)
+        if (success) {
+          console.log(`✅ [AutoBackup] 备份文件已保存到: ${backupPath}/${fileName}`)
+          return
+        }
+      }
+      
+      // 如果没有目录句柄或权限验证失败，使用文件选择器
+      console.log(`📁 [AutoBackup] 使用文件选择器保存备份文件: ${fileName}`)
+      await DataService.saveFileWithSystemAPI(exportData, fileName, null)
+      
+    } catch (error) {
+      console.warn('现代API备份失败，使用传统下载方式:', error)
+      // 回退到传统下载方式
+      DataService.downloadAsJSON(exportData, fileName)
+      console.log(`💾 [AutoBackup] 备份文件已下载: ${fileName}`)
+      console.log(`📁 [AutoBackup] 请手动将文件移动到: ${backupPath}`)
+    }
   }, '执行备份操作', ErrorTypes.BUSINESS)
 
   /**
@@ -184,12 +204,8 @@ export class AutoBackupService {
       throw new Error('自主备份功能未启用')
     }
     
-    if (!this.validateBackupPath(backupConfig.backupPath)) {
-      throw new Error('备份路径无效，请在设置中配置正确的备份目录')
-    }
-    
     const today = new Date().toISOString().split('T')[0]
-    await this.executeBackup(backupConfig.backupPath, today)
+    await this.executeBackup(backupConfig.backupPath || '用户选择的目录', today)
     
     // 更新最后备份日期
     await ConfigService.updateAutoBackupConfig({
@@ -198,4 +214,35 @@ export class AutoBackupService {
     
     console.log('✅ [AutoBackup] 手动备份完成')
   }, '手动备份', ErrorTypes.BUSINESS)
+
+  /**
+   * 选择并设置备份目录
+   * @returns {Promise<{success: boolean, path: string}>} 选择结果
+   */
+  static selectBackupDirectory = withErrorHandling(async () => {
+    if (!DirectoryHandleService.isSupported()) {
+      throw new Error('浏览器不支持目录选择功能，请使用 Chrome 86+ 或 Edge 86+')
+    }
+
+    try {
+      const { handle, path } = await DirectoryHandleService.showDirectoryPicker()
+      
+      // 存储目录句柄
+      await DirectoryHandleService.storeDirectoryHandle('autoBackup', handle, path)
+      
+      // 更新配置
+      await ConfigService.updateAutoBackupConfig({
+        backupPath: path,
+        useModernAPI: true
+      })
+
+      console.log('✅ [AutoBackup] 备份目录已设置:', path)
+      return { success: true, path }
+    } catch (error) {
+      if (error.message.includes('取消')) {
+        return { success: false, path: '' }
+      }
+      throw error
+    }
+  }, '选择备份目录', ErrorTypes.BUSINESS)
 }

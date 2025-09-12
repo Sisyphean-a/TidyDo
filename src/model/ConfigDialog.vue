@@ -329,33 +329,93 @@
 
                         <!-- 备份目录设置 -->
                         <div class="mb-4" v-show="autoBackupConfig.enabled">
-                          <v-text-field
-                            v-model="autoBackupConfig.backupPath"
-                            label="备份目录路径"
-                            placeholder="例如: D:\TidyDo-Backups 或 /Users/username/Documents/TidyDo-Backups"
-                            prepend-icon="mdi-folder"
-                            variant="outlined"
-                            density="comfortable"
-                            :disabled="isLoading"
-                            :error="autoBackupConfig.enabled && !isBackupPathValid"
-                            :error-messages="autoBackupConfig.enabled && !isBackupPathValid ? ['请设置有效的备份目录路径'] : []"
-                          >
-                            <template #append-inner>
-                              <v-tooltip text="点击选择目录">
-                                <template #activator="{ props }">
-                                  <v-btn
-                                    v-bind="props"
-                                    icon
-                                    variant="text"
-                                    size="small"
-                                    @click="selectBackupDirectory"
-                                  >
-                                    <v-icon>mdi-folder-open</v-icon>
-                                  </v-btn>
-                                </template>
-                              </v-tooltip>
-                            </template>
-                          </v-text-field>
+                          <!-- 现代浏览器支持的目录选择 -->
+                          <div v-if="fileSystemSupport.isSupported">
+                            <div class="text-subtitle-2 mb-2">备份目录设置</div>
+                            <v-card variant="outlined" class="pa-4">
+                              <div class="d-flex align-center mb-3">
+                                <v-icon class="me-2" color="success">mdi-check-circle</v-icon>
+                                <span class="text-body-2">您的浏览器支持现代目录选择功能</span>
+                              </div>
+                              
+                              <div v-if="autoBackupConfig.backupPath" class="mb-3">
+                                <div class="text-body-2 mb-2">
+                                  <strong>当前目录：</strong>
+                                </div>
+                                <v-chip
+                                  color="primary"
+                                  variant="tonal"
+                                  prepend-icon="mdi-folder"
+                                  class="mb-2"
+                                >
+                                  {{ autoBackupConfig.backupPath }}
+                                </v-chip>
+                                <div class="text-caption text-grey">
+                                  备份文件将直接保存到此目录中
+                                </div>
+                              </div>
+                              
+                              <div class="d-flex gap-2">
+                                <v-btn
+                                  color="primary"
+                                  variant="flat"
+                                  prepend-icon="mdi-folder-open"
+                                  @click="selectBackupDirectory"
+                                  :disabled="isLoading"
+                                >
+                                  {{ autoBackupConfig.backupPath ? '更改目录' : '选择目录' }}
+                                </v-btn>
+                                
+                                <v-btn
+                                  v-if="autoBackupConfig.backupPath"
+                                  color="grey"
+                                  variant="outlined"
+                                  prepend-icon="mdi-close"
+                                  @click="clearBackupDirectory"
+                                  :disabled="isLoading"
+                                >
+                                  清除
+                                </v-btn>
+                              </div>
+                            </v-card>
+                          </div>
+                          
+                          <!-- 传统浏览器的手动输入 -->
+                          <div v-else>
+                            <v-text-field
+                              v-model="autoBackupConfig.backupPath"
+                              label="备份目录路径"
+                              placeholder="例如: D:\TidyDo-Backups 或 /Users/username/Documents/TidyDo-Backups"
+                              prepend-icon="mdi-folder"
+                              variant="outlined"
+                              density="comfortable"
+                              :disabled="isLoading"
+                              :error="autoBackupConfig.enabled && !isBackupPathValid"
+                              :error-messages="autoBackupConfig.enabled && !isBackupPathValid ? ['请设置有效的备份目录路径'] : []"
+                            >
+                              <template #append-inner>
+                                <v-tooltip text="浏览器不支持目录选择">
+                                  <template #activator="{ props }">
+                                    <v-icon v-bind="props" color="grey">mdi-information</v-icon>
+                                  </template>
+                                </v-tooltip>
+                              </template>
+                            </v-text-field>
+                            
+                            <v-alert
+                              type="warning"
+                              variant="tonal"
+                              class="mt-2"
+                            >
+                              <div class="text-body-2">
+                                <strong>浏览器兼容性提示：</strong>
+                                <br>
+                                您的浏览器不支持现代目录选择功能。建议升级到 Chrome 86+ 或 Edge 86+ 以获得更好的体验。
+                                <br>
+                                当前模式下，备份文件将下载到默认目录，您需要手动移动到指定位置。
+                              </div>
+                            </v-alert>
+                          </div>
                           
                           <v-alert
                             v-if="autoBackupConfig.enabled && !autoBackupConfig.backupPath"
@@ -364,7 +424,7 @@
                             class="mt-2"
                           >
                             <div class="text-body-2">
-                              <strong>提示：</strong>请设置备份目录路径，否则无法启用自主备份功能。
+                              <strong>提示：</strong>请设置备份目录，否则无法启用自主备份功能。
                               <br>
                               备份文件将以 <code>tidydo-backup-YYYY-MM-DD.json</code> 格式命名。
                             </div>
@@ -564,6 +624,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
 import { DataService } from '@/services/dataService'
 import { AutoBackupService } from '@/services/autoBackupService'
+import { DirectoryHandleService } from '@/services/directoryHandleService'
 
 const props = defineProps({
   modelValue: {
@@ -596,6 +657,7 @@ const backupStatus = ref({
   expectedFileName: '',
   isPathValid: false
 })
+const fileSystemSupport = ref(DirectoryHandleService.getSupportInfo())
 
 // 选项数据
 const colorOptions = [
@@ -730,9 +792,21 @@ const handleExportData = async () => {
   isExporting.value = true
   try {
     const exportData = await DataService.exportAllData()
-    DataService.downloadAsJSON(exportData)
-
-    // 显示成功消息（这里可以使用Vuetify的snackbar或者其他通知组件）
+    
+    if (DataService.isFileSystemAccessSupported()) {
+      // 使用现代API
+      const success = await DataService.saveFileWithSystemAPI(exportData)
+      if (success) {
+        alert('✅ 数据导出成功！文件已保存到指定位置。')
+      } else {
+        console.log('用户取消了文件保存')
+      }
+    } else {
+      // 使用传统下载方式
+      DataService.downloadAsJSON(exportData)
+      alert('✅ 数据导出成功！请检查下载文件夹。')
+    }
+    
     console.log('数据导出成功')
   } catch (error) {
     console.error('导出失败：', error)
@@ -823,10 +897,50 @@ const handleAutoBackupToggle = async (enabled) => {
 }
 
 // 选择备份目录
-const selectBackupDirectory = () => {
-  // 由于浏览器安全限制，无法直接打开文件选择器选择目录
-  // 这里提供一个提示，让用户手动输入路径
-  alert('请在输入框中手动输入备份目录路径，例如：\n\nWindows: D:\\TidyDo-Backups\nMac/Linux: /Users/username/Documents/TidyDo-Backups')
+const selectBackupDirectory = async () => {
+  if (!fileSystemSupport.value.isSupported) {
+    // 不支持现代API，显示提示信息
+    const message = `您的浏览器不支持现代目录选择功能。\n\n建议使用以下浏览器的最新版本：\n• Chrome 86+\n• Edge 86+\n\n或者您可以手动输入备份目录路径，例如：\nWindows: D:\\TidyDo-Backups\nMac/Linux: /Users/username/Documents/TidyDo-Backups`
+    alert(message)
+    return
+  }
+
+  try {
+    const result = await AutoBackupService.selectBackupDirectory()
+    if (result.success) {
+      // 更新本地配置显示
+      autoBackupConfig.value.backupPath = result.path
+      autoBackupConfig.value.useModernAPI = true
+      
+      // 重新加载备份状态
+      await loadBackupStatus()
+      
+      alert(`✅ 备份目录设置成功！\n\n目录: ${result.path}\n\n现在您的备份文件将直接保存到此目录中。`)
+    }
+  } catch (error) {
+    console.error('选择备份目录失败:', error)
+    alert(`选择目录失败: ${error.message}`)
+  }
+}
+
+// 清除备份目录
+const clearBackupDirectory = async () => {
+  try {
+    // 清除目录句柄
+    await DirectoryHandleService.clearDirectoryHandle('autoBackup')
+    
+    // 更新配置
+    autoBackupConfig.value.backupPath = ''
+    autoBackupConfig.value.useModernAPI = false
+    
+    // 重新加载备份状态
+    await loadBackupStatus()
+    
+    console.log('🗑️ 备份目录已清除')
+  } catch (error) {
+    console.error('清除备份目录失败:', error)
+    alert(`清除失败: ${error.message}`)
+  }
 }
 
 // 手动备份
@@ -835,7 +949,12 @@ const handleManualBackup = async () => {
   try {
     await AutoBackupService.manualBackup()
     await loadBackupStatus() // 重新加载状态
-    alert('备份完成！请检查下载的文件并保存到指定目录。')
+    
+    if (fileSystemSupport.value.isSupported && autoBackupConfig.value.useModernAPI) {
+      alert('✅ 备份完成！文件已保存到指定目录。')
+    } else {
+      alert('✅ 备份完成！请检查下载的文件并保存到指定目录。')
+    }
   } catch (error) {
     console.error('手动备份失败：', error)
     alert(`备份失败：${error.message}`)

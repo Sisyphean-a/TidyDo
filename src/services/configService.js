@@ -76,9 +76,11 @@ export const DEFAULT_CONFIG = {
   // 自主备份配置
   autoBackupConfig: {
     enabled: false,        // 是否启用自主备份
-    backupPath: '',        // 备份目录路径
+    backupPath: '',        // 备份目录路径（显示用）
+    directoryHandle: null, // 目录句柄（实际使用，不可序列化）
     lastBackupDate: null,  // 最后备份日期
     backupOnStartup: true, // 启动时自动备份
+    useModernAPI: false,   // 是否使用现代文件系统API
   },
 }
 

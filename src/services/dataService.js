@@ -99,7 +99,7 @@ export class DataService {
     return newData
   }
 
-  // 下载数据为JSON文件
+  // 下载数据为JSON文件（传统方式）
   static downloadAsJSON(data, filename = `tidydo-backup-${new Date().toISOString().split('T')[0]}.json`) {
     try {
       const jsonString = JSON.stringify(data, null, 2)
@@ -119,6 +119,89 @@ export class DataService {
       console.error('下载文件失败：', error)
       throw new Error('文件下载失败')
     }
+  }
+
+  /**
+   * 使用现代文件系统API保存文件到指定位置
+   * @param {Object} data - 要保存的数据
+   * @param {string} filename - 文件名
+   * @param {FileSystemDirectoryHandle} directoryHandle - 目录句柄（可选）
+   * @returns {Promise<boolean>} 保存是否成功
+   */
+  static async saveFileWithSystemAPI(data, filename = `tidydo-backup-${new Date().toISOString().split('T')[0]}.json`, directoryHandle = null) {
+    try {
+      // 检查是否支持 File System Access API
+      if (!window.showSaveFilePicker) {
+        console.warn('浏览器不支持 File System Access API，使用传统下载方式')
+        return this.downloadAsJSON(data, filename)
+      }
+
+      const jsonString = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+
+      let fileHandle
+      
+      if (directoryHandle) {
+        // 如果有目录句柄，在指定目录中创建文件
+        try {
+          fileHandle = await directoryHandle.getFileHandle(filename, { create: true })
+        } catch (error) {
+          console.warn('无法在指定目录创建文件，使用文件选择器:', error)
+          fileHandle = await this.showSaveFilePickerWithFallback(filename)
+        }
+      } else {
+        // 使用文件选择器让用户选择保存位置
+        fileHandle = await this.showSaveFilePickerWithFallback(filename)
+      }
+
+      // 写入文件
+      const writable = await fileHandle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+
+      console.log('✅ 文件已保存到:', fileHandle.name)
+      return true
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('用户取消了文件保存')
+        return false
+      }
+      console.error('保存文件失败：', error)
+      // 如果现代API失败，回退到传统下载方式
+      console.warn('回退到传统下载方式')
+      return this.downloadAsJSON(data, filename)
+    }
+  }
+
+  /**
+   * 显示保存文件选择器，带回退机制
+   * @param {string} filename - 建议的文件名
+   * @returns {Promise<FileSystemFileHandle>} 文件句柄
+   */
+  static async showSaveFilePickerWithFallback(filename) {
+    try {
+      return await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{
+          description: 'JSON 文件',
+          accept: { 'application/json': ['.json'] }
+        }]
+      })
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw error // 用户取消，向上传递
+      }
+      console.warn('showSaveFilePicker 失败，回退到传统下载方式')
+      throw new Error('文件选择器不可用')
+    }
+  }
+
+  /**
+   * 检查是否支持现代文件系统API
+   * @returns {boolean} 是否支持
+   */
+  static isFileSystemAccessSupported() {
+    return 'showSaveFilePicker' in window && 'showDirectoryPicker' in window
   }
 
   // 从文件读取JSON数据
