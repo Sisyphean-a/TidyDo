@@ -1,6 +1,5 @@
 import { ConfigService } from './configService'
 import { initializeDefaultData } from './todoService'
-import { AutoBackupService } from './autoBackupService'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 import { useSimpleTodosStore } from '@/stores/useSimpleTodosStore'
@@ -50,12 +49,6 @@ export class AppService {
 
       this.#isInitialized = true
       console.log('✅ [AppService] 应用初始化完成')
-
-      // 在应用完全初始化后，执行自主备份检查
-      // 使用 setTimeout 确保在下一个事件循环中执行，避免阻塞初始化
-      setTimeout(() => {
-        this.performAutoBackupCheck()
-      }, 1000) // 延迟1秒执行，确保UI渲染完成
     } finally {
       this.#isInitializing = false
     }
@@ -124,18 +117,7 @@ export class AppService {
     appStore.initializeSelection(categoriesStore.categories)
   }
 
-  /**
-   * 执行自主备份检查
-   * 在应用启动完成后调用，检查并执行自动备份
-   */
-  static performAutoBackupCheck = withErrorHandling(async () => {
-    try {
-      await AutoBackupService.performAutoBackup()
-    } catch (error) {
-      // 自主备份失败不应影响应用的正常使用
-      console.warn('⚠️ [AppService] 自主备份检查失败:', error.message)
-    }
-  }, '自主备份检查', ErrorTypes.BUSINESS)
+
 
   /**
    * 重置应用状态

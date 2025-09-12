@@ -130,9 +130,10 @@
         <span class="d-none d-md-inline">{{ todosStore.showArchived ? '隐藏归档' : '显示归档' }}</span>
       </v-btn>
       <v-btn
-        icon="mdi-refresh"
-        @click="todosStore.loadTodos"
-        :loading="todosStore.isLoading"
+        icon="mdi-download"
+        @click="handleExportBackup"
+        :loading="isExporting"
+        title="导出备份"
       />
     </v-btn-group>
   </v-toolbar>
@@ -150,12 +151,13 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/useAppStore'
 import { useTodosStore } from '@/stores/useTodosStore'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useDialog } from '@/composables/useDialog'
 import { useNotification } from '@/composables/useNotification'
+import { DataService } from '@/services/dataService'
 import TodoEditDialog from '@/model/TodoEditDialog.vue'
 
 // 使用store
@@ -166,6 +168,9 @@ const categoriesStore = useCategoriesStore()
 // 通知和弹窗管理
 const { showSuccess, showError } = useNotification()
 const todoEditDialog = useDialog()
+
+// 导出状态
+const isExporting = ref(false)
 
 // 计算按钮禁用状态
 const isCreateButtonDisabled = computed(() => {
@@ -214,6 +219,23 @@ const handleDeleteTodo = async (item) => {
     showSuccess('删除待办成功')
   } catch (error) {
     showError('删除待办失败')
+  }
+}
+
+// 处理导出备份
+const handleExportBackup = async () => {
+  isExporting.value = true
+  try {
+    const exportData = await DataService.exportAllData()
+
+    // 直接使用传统下载方式，不管浏览器支持情况
+    DataService.downloadAsJSON(exportData)
+    showSuccess('备份导出成功！请检查下载文件夹')
+  } catch (error) {
+    console.error('导出备份失败：', error)
+    showError('导出备份失败')
+  } finally {
+    isExporting.value = false
   }
 }
 </script>

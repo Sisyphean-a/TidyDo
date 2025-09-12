@@ -73,15 +73,7 @@ export const DEFAULT_CONFIG = {
     timeFormat: '24h',
   },
 
-  // 自主备份配置
-  autoBackupConfig: {
-    enabled: false,        // 是否启用自主备份
-    backupPath: '',        // 备份目录路径（显示用）
-    directoryHandle: null, // 目录句柄（实际使用，不可序列化）
-    lastBackupDate: null,  // 最后备份日期
-    backupOnStartup: true, // 启动时自动备份
-    useModernAPI: false,   // 是否使用现代文件系统API
-  },
+
 }
 
 /**
@@ -142,11 +134,7 @@ export class ConfigService {
     return config.systemConfig
   }
 
-  // 获取自主备份配置
-  static async getAutoBackupConfig() {
-    const config = await this.getConfig()
-    return config.autoBackupConfig
-  }
+
 
   // 更新特定配置
   static async updateStatusConfig(statusConfig) {
@@ -173,11 +161,7 @@ export class ConfigService {
     return await this.saveConfig(config)
   }
 
-  static async updateAutoBackupConfig(autoBackupConfig) {
-    const config = await this.getConfig()
-    config.autoBackupConfig = { ...config.autoBackupConfig, ...autoBackupConfig }
-    return await this.saveConfig(config)
-  }
+
 
   // 重置为默认配置
   static async resetToDefault() {
