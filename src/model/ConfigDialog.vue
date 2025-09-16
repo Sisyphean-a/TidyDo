@@ -2,10 +2,12 @@
   <v-dialog
     v-model="isVisible"
     max-width="800"
+    max-height="90vh"
     persistent
   >
-    <v-card>
-      <v-card-title class="d-flex align-center">
+    <v-card class="d-flex flex-column" style="height: 80vh;">
+      <!-- 固定头部 -->
+      <v-card-title class="d-flex align-center flex-shrink-0">
         <v-icon class="me-2">mdi-cog</v-icon>
         系统配置
         <v-spacer />
@@ -20,10 +22,10 @@
 
       <v-divider />
 
-      <v-card-text class="pa-6">
+      <!-- 固定标签栏 -->
+      <div class="flex-shrink-0 pa-4 pb-0">
         <v-tabs
           v-model="activeTab"
-          class="mb-6"
         >
           <v-tab value="status">状态配置</v-tab>
           <v-tab value="priority">优先级配置</v-tab>
@@ -31,6 +33,10 @@
           <!-- <v-tab value="field">字段配置</v-tab> -->
           <!-- <v-tab value="system">系统设置</v-tab> -->
         </v-tabs>
+      </div>
+
+      <!-- 可滚动内容区域 -->
+      <v-card-text class="flex-grow-1 overflow-y-auto pa-4" style="min-height: 0;">
 
         <v-tabs-window v-model="activeTab">
           <!-- 状态配置 -->
@@ -404,9 +410,10 @@
         </v-tabs-window>
       </v-card-text>
 
+      <!-- 固定底部按钮 -->
       <v-divider />
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="pa-4 flex-shrink-0">
         <v-btn
           color="warning"
           variant="outlined"

@@ -88,12 +88,39 @@ export const useAppStore = defineStore('app', () => {
     // 应用搜索过滤
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase().trim()
-      filteredTodos = filteredTodos.filter(
-        (todo) =>
-          todo.title?.toLowerCase().includes(query) ||
-          todo.description?.toLowerCase().includes(query) ||
-          todo.tags?.some((tag) => tag.toLowerCase().includes(query)),
-      )
+      filteredTodos = filteredTodos.filter((todo) => {
+        // 搜索标题
+        if (todo.title?.toLowerCase().includes(query)) {
+          return true
+        }
+
+        // 搜索描述
+        if (todo.description?.toLowerCase().includes(query)) {
+          return true
+        }
+
+        // 搜索标签
+        if (todo.tags?.some((tag) => tag.toLowerCase().includes(query))) {
+          return true
+        }
+
+        // 搜索编号（自定义编号或ID前8位）
+        // 编号搜索要求最少匹配两个字符
+        if (query.length >= 2) {
+          // 搜索自定义编号
+          if (todo.customNumber && todo.customNumber.toLowerCase().includes(query)) {
+            return true
+          }
+
+          // 搜索ID前8位（格式化为大写）
+          const formattedId = todo.id.substring(0, 8).toUpperCase()
+          if (formattedId.toLowerCase().includes(query)) {
+            return true
+          }
+        }
+
+        return false
+      })
     }
 
     return filteredTodos

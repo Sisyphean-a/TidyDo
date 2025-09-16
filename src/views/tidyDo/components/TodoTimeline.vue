@@ -188,6 +188,22 @@
                   {{ categoriesStore.getCategoryById(item.categoryId)?.name }}
                 </v-chip>
 
+                <!-- 编号 -->
+                <v-chip
+                  size="x-small"
+                  class="me-2"
+                  color="grey"
+                  variant="outlined"
+                >
+                  <v-icon
+                    start
+                    size="x-small"
+                  >
+                    mdi-hashtag
+                  </v-icon>
+                  <span v-html="highlightSearchQuery(getDisplayNumber(item))"></span>
+                </v-chip>
+
                 <!-- 标题 -->
                 <span
                   class="timeline-item-title flex-grow-1"
@@ -458,6 +474,16 @@ const highlightSearchQuery = (text) => {
   const query = props.searchQuery.toLowerCase()
   const regex = new RegExp(`(${query})`, 'gi')
   return text.replace(regex, '<mark class="search-highlight">$1</mark>')
+}
+
+// 格式化ID显示（取前8位）
+const formatId = (id) => {
+  return id.substring(0, 8).toUpperCase()
+}
+
+// 获取显示编号（优先使用自定义编号）
+const getDisplayNumber = (item) => {
+  return item.customNumber || formatId(item.id)
 }
 
 // 排序逻辑现在由 AppStore 统一管理，无需本地监听

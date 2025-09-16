@@ -81,7 +81,7 @@
     <div class="search-container me-4">
       <v-text-field
         v-model="appStore.searchQuery"
-        placeholder="搜索待办事项..."
+        placeholder="搜索标题、编号、描述、标签..."
         density="compact"
         variant="outlined"
         hide-details
@@ -289,6 +289,7 @@ const handleExportBackup = async () => {
 /* 功能按钮组样式 */
 .action-buttons {
   border-radius: 6px;
+  margin-right: 10px;
 }
 
 .action-buttons .v-btn {

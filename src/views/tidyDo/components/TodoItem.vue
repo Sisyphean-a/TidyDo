@@ -23,7 +23,7 @@
               class="me-1"
               >mdi-hashtag</v-icon
             >
-            {{ getDisplayNumber() }}
+            <span v-html="highlightText(getDisplayNumber(), searchQuery)"></span>
           </v-btn>
         </template>
       </v-tooltip>
