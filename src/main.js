@@ -7,6 +7,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { zhHans } from 'vuetify/locale'
 
 // 引入 MDI 图标
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -26,6 +27,11 @@ const vuetify = createVuetify({
     sets: {
       mdi,
     },
+  },
+  // 配置中文本地化
+  locale: {
+    locale: 'zhHans',
+    messages: { zhHans },
   },
 })
 
