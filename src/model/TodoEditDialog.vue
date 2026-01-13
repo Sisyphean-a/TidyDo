@@ -61,10 +61,9 @@
           <v-row>
             <!-- 节点日期 -->
             <v-col cols="6">
-              <v-text-field
+              <DatePickerField
                 v-model="formData.milestoneDate"
                 label="节点日期"
-                type="date"
                 variant="outlined"
                 density="comfortable"
               />
@@ -72,10 +71,9 @@
 
             <!-- 结束日期 -->
             <v-col cols="6">
-              <v-text-field
+              <DatePickerField
                 v-model="formData.endDate"
                 label="结束日期"
-                type="date"
                 variant="outlined"
                 density="comfortable"
               />
@@ -176,7 +174,10 @@
                   <div class="text-caption text-medium-emphasis">分类</div>
                   <div class="text-body-2">
                     {{ getCategoryName(item?.categoryId) }}
-                    <span v-if="formData.categoryId && formData.categoryId !== item?.categoryId" class="text-primary">
+                    <span
+                      v-if="formData.categoryId && formData.categoryId !== item?.categoryId"
+                      class="text-primary"
+                    >
                       → {{ getCategoryName(formData.categoryId) }}
                     </span>
                   </div>
@@ -229,6 +230,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { ConfigService } from '@/services/configService'
+import DatePickerField from '@/components/DatePickerField.vue'
 
 const props = defineProps({
   modelValue: {
@@ -299,7 +301,7 @@ const statusOptions = computed(() => {
 
 // 分组选项（排除筛选类）
 const categoryOptions = computed(() => {
-  return (props.categories || []).filter(cat => !cat.isFilterCategory)
+  return (props.categories || []).filter((cat) => !cat.isFilterCategory)
 })
 
 // 验证规则
@@ -307,7 +309,6 @@ const titleRules = [
   (v) => !!v || '标题不能为空',
   (v) => (v && v.length <= 100) || '标题不能超过100个字符',
 ]
-
 
 // 初始化表单数据
 const initFormData = () => {
@@ -388,7 +389,7 @@ const handleSave = async () => {
   try {
     // 准备保存的数据
     const todoData = { ...formData.value }
-    
+
     // 处理分组ID逻辑
     if (!todoData.categoryId) {
       if (isCreateMode.value) {

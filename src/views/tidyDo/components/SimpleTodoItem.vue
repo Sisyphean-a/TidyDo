@@ -1,7 +1,7 @@
 <template>
   <div
     class="simple-todo-item"
-    :class="{ 'editing': isEditing }"
+    :class="{ editing: isEditing }"
     :data-todo-id="todo.id"
     @mouseenter="showActions = true"
     @mouseleave="showActions = false"
@@ -14,7 +14,10 @@
     >
       <v-card-text class="pa-3">
         <!-- 编辑模式 -->
-        <div v-if="isEditing" class="edit-mode">
+        <div
+          v-if="isEditing"
+          class="edit-mode"
+        >
           <v-text-field
             ref="editInput"
             v-model="editTitle"
@@ -47,9 +50,15 @@
         </div>
 
         <!-- 显示模式 -->
-        <div v-else class="display-mode">
+        <div
+          v-else
+          class="display-mode"
+        >
           <div class="todo-content">
-            <p class="todo-title" :class="titleClass">
+            <p
+              class="todo-title"
+              :class="titleClass"
+            >
               {{ todo.title || '点击输入标题...' }}
             </p>
             <div class="todo-meta">
@@ -60,7 +69,7 @@
           </div>
 
           <!-- 操作按钮 -->
-          <div 
+          <div
             v-show="showActions"
             class="todo-actions"
           >
@@ -93,8 +102,8 @@ import { getSimpleTodoStatusConfig } from '@/services/simpleTodoService'
 const props = defineProps({
   todo: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 // Emits
@@ -111,22 +120,22 @@ const statusConfig = computed(() => getSimpleTodoStatusConfig(props.todo.status)
 
 const cardClass = computed(() => ({
   'todo-card-completed': props.todo.status === 'done',
-  'todo-card-paused': props.todo.status === 'paused'
+  'todo-card-paused': props.todo.status === 'paused',
 }))
 
 const titleClass = computed(() => ({
   'text-decoration-line-through': props.todo.status === 'done',
-  'text-medium-emphasis': props.todo.status === 'paused'
+  'text-medium-emphasis': props.todo.status === 'paused',
 }))
 
 // 方法
 const startEdit = async () => {
   if (isEditing.value) return
-  
+
   isEditing.value = true
   editTitle.value = props.todo.title
   showActions.value = false
-  
+
   await nextTick()
   if (editInput.value) {
     editInput.value.focus()
@@ -147,7 +156,7 @@ const saveEdit = () => {
   if (editTitle.value.trim() !== props.todo.title) {
     const updatedTodo = {
       ...props.todo,
-      title: editTitle.value.trim()
+      title: editTitle.value.trim(),
     }
     emit('update', updatedTodo)
   }
@@ -177,7 +186,7 @@ const formatDate = (dateString) => {
   const now = new Date()
   const diffTime = Math.abs(now - date)
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 1) {
     return '今天'
   } else if (diffDays === 2) {
@@ -185,10 +194,10 @@ const formatDate = (dateString) => {
   } else if (diffDays <= 7) {
     return `${diffDays - 1}天前`
   } else {
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric'
-    })
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}/${month}/${day}`
   }
 }
 
@@ -221,7 +230,7 @@ onMounted(() => {
 /* 编辑模式下的样式 */
 .simple-todo-item.editing .todo-card {
   cursor: text;
-  border: 2px solid #1976D2;
+  border: 2px solid #1976d2;
   box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
 }
 
@@ -235,12 +244,12 @@ onMounted(() => {
 }
 
 .todo-card-completed {
-  border-left-color: #4CAF50;
+  border-left-color: #4caf50;
   background-color: rgba(76, 175, 80, 0.05);
 }
 
 .todo-card-paused {
-  border-left-color: #9E9E9E;
+  border-left-color: #9e9e9e;
   background-color: rgba(158, 158, 158, 0.05);
 }
 
@@ -304,12 +313,12 @@ onMounted(() => {
   .todo-actions {
     opacity: 1;
   }
-  
+
   .display-mode {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .todo-actions {
     align-self: flex-end;
     margin-left: 0;

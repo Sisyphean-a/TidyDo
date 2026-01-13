@@ -147,10 +147,7 @@
 
         <v-card
           elevation="1"
-          :class="[
-            'timeline-group-card',
-            { 'timeline-group-card-special': group.isSpecial }
-          ]"
+          :class="['timeline-group-card', { 'timeline-group-card-special': group.isSpecial }]"
         >
           <v-card-text class="pa-3">
             <div
@@ -278,6 +275,7 @@ import { computed, onMounted, onUnmounted } from 'vue'
 import { useCategoriesStore } from '@/stores/useCategoriesStore'
 import { useAppStore } from '@/stores/useAppStore'
 import { useConfig } from '@/composables/useConfig'
+import { formatCalendarDate } from '@/utils/dateUtils'
 
 // Store 和 Composables
 const categoriesStore = useCategoriesStore()
@@ -456,11 +454,7 @@ const formatDateKey = (date) => {
     return dateFormatCache.get(timestamp)
   }
 
-  const formatted = date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const formatted = formatCalendarDate(date, 'long')
 
   dateFormatCache.set(timestamp, formatted)
   return formatted

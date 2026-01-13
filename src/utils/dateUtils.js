@@ -38,12 +38,12 @@ export const calculateDateRange = (todos, timeField = 'endDate') => {
         hasValidDates: false
       }
     }
-    
+
     const dates = fallbackTodos.map(todo => new Date(todo.createdAt))
     const minDate = new Date(Math.min(...dates))
     const maxDate = new Date(Math.max(...dates))
     const spanDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24))
-    
+
     return {
       minDate,
       maxDate,
@@ -177,18 +177,18 @@ export const calculateMultiMonthLayout = (totalMonths, monthsPerRow) => {
 export const generateCalendarGrid = (startDate, monthsToShow = 1) => {
   const months = []
   const currentDate = new Date(startDate)
-  
+
   // 确保从月初开始
   currentDate.setDate(1)
-  
+
   for (let i = 0; i < monthsToShow; i++) {
     const monthData = generateMonthGrid(new Date(currentDate))
     months.push(monthData)
-    
+
     // 移动到下一个月
     currentDate.setMonth(currentDate.getMonth() + 1)
   }
-  
+
   return months
 }
 
@@ -200,20 +200,20 @@ export const generateCalendarGrid = (startDate, monthsToShow = 1) => {
 const generateMonthGrid = (monthDate) => {
   const year = monthDate.getFullYear()
   const month = monthDate.getMonth()
-  
+
   // 获取月份信息
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
   const daysInMonth = lastDay.getDate()
-  
+
   // 获取第一天是星期几（0=周日，1=周一...）
   let firstDayOfWeek = firstDay.getDay()
   // 转换为周一开始（0=周一，1=周二...）
   firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
-  
+
   // 生成日期网格
   const days = []
-  
+
   // 添加上个月的日期（填充）
   const prevMonth = new Date(year, month - 1, 0)
   const prevMonthDays = prevMonth.getDate()
@@ -225,7 +225,7 @@ const generateMonthGrid = (monthDate) => {
       isNextMonth: false
     })
   }
-  
+
   // 添加当前月的日期
   for (let day = 1; day <= daysInMonth; day++) {
     days.push({
@@ -235,7 +235,7 @@ const generateMonthGrid = (monthDate) => {
       isNextMonth: false
     })
   }
-  
+
   // 添加下个月的日期（填充到42个格子，6行7列）
   const remainingDays = 42 - days.length
   for (let day = 1; day <= remainingDays; day++) {
@@ -246,7 +246,7 @@ const generateMonthGrid = (monthDate) => {
       isNextMonth: true
     })
   }
-  
+
   return {
     year,
     month,
@@ -279,7 +279,7 @@ export const getDateKey = (date) => {
   if (!date) return null
   const d = new Date(date)
   if (isNaN(d.getTime())) return null
-  
+
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
@@ -296,17 +296,17 @@ export const formatCalendarDate = (date, format = 'short') => {
   if (!date) return ''
   const d = new Date(date)
   if (isNaN(d.getTime())) return ''
-  
+
   switch (format) {
     case 'day':
       return String(d.getDate())
     case 'long':
-      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
     case 'short':
     default:
+      const year = d.getFullYear()
       const month = String(d.getMonth() + 1).padStart(2, '0')
       const day = String(d.getDate()).padStart(2, '0')
-      return `${month}/${day}`
+      return `${year}/${month}/${day}`
   }
 }
 
@@ -342,14 +342,14 @@ export const getDensityLevel = (count) => {
  */
 export const aggregateTodosByDate = (todos, timeField = 'endDate') => {
   const dateMap = {}
-  
+
   todos.forEach(todo => {
     const dateValue = getDateValue(todo, timeField)
     if (!dateValue) return
-    
+
     const dateKey = getDateKey(dateValue)
     if (!dateKey) return
-    
+
     if (!dateMap[dateKey]) {
       dateMap[dateKey] = {
         date: new Date(dateValue),
@@ -357,10 +357,10 @@ export const aggregateTodosByDate = (todos, timeField = 'endDate') => {
         count: 0
       }
     }
-    
+
     dateMap[dateKey].todos.push(todo)
     dateMap[dateKey].count++
   })
-  
+
   return dateMap
 }
