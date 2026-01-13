@@ -16,9 +16,14 @@ import App from './App.vue'
 import router from './router'
 import { AppService } from './services/appService'
 
+import { CustomDateAdapter } from './utils/CustomDateAdapter'
+
 const vuetify = createVuetify({
   components,
   directives,
+  date: {
+    adapter: CustomDateAdapter,
+  },
   // 配置图标
   icons: {
     defaultSet: 'mdi',
